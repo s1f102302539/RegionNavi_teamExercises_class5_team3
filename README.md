@@ -22,16 +22,21 @@ source venv/bin/activate
 ```
 
 2. サーバー設営
+```
 npm run dev
 ローカル：http://localhost:3000
-
+```
 
 ### 環境構築（初回のみ）
+```
 Node.jsのインストール：https://nodejs.org/ja
 基本的に標準設定でOK
 
 作業フォルダに移動
 仮想環境のセットアップ
+```
+
+
 ```bash
 python -m venv venv
 # Windows
@@ -39,9 +44,12 @@ venv\Scripts\activate
 # macOS/Linux
 source venv/bin/activate
 ```
+
+```
 npm install
 サーバー設営
 npm run dev
+```
 
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
