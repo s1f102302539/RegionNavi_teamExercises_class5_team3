@@ -1,0 +1,53 @@
+Django と Next.js の対応関係メモ
+==============================
+
+■ 概要
+----------------------------------------
+Django = バックエンド中心のMVCフレームワーク  
+Next.js = フロントエンド中心のReactベースFW（App Router）
+
+両者の役割に基づく対応関係は以下の通り。
+
+■ 構成・役割の対応
+----------------------------------------
+
+[Django]                   [Next.js (App Router)]               説明
+--------------------------------------------------------------------------------------
+views.py                  ->  app/xxx/page.tsx                  ページの表示ロジック（Reactで実装）
+urls.py                   ->  appディレクトリのフォルダ構造     URLルーティングをファイル構造で定義
+templates/                ->  JSX / TSX ファイル                HTMLテンプレートの代わりにReactで描画
+models.py                 ->  外部API or ORMライブラリ使用       DB操作は別途ライブラリ（例：Prisma, Supabase）
+forms.py                  ->  Reactのフォーム＋useStateなど     UIとしてフォームを構築、JSで制御
+static/                   ->  public/                           静的ファイル（画像、フォントなど）
+middleware.py             ->  middleware.ts                     リクエスト制御（認証・リダイレクト）
+settings.py               ->  next.config.js / .env.local       環境設定
+manage.py runserver       ->  npm run dev                       開発サーバー起動コマンド
+Django REST Framework     ->  app/api/xxx/route.ts              APIルート（内部 or 外部API）
+
+■ 補足ポイント
+----------------------------------------
+・Next.jsはUIとルーティングに特化しているため、モデル・DB関連は別途構築が必要。
+・Next.js単体で完結させる場合：APIルートを使ってロジックを記述。
+・Djangoと併用する場合：バックエンドとしてDjango REST APIを構築し、Next.jsがフロントエンドで呼び出す構成が一般的。
+
+■ 併用構成の例（Next.js + Django）
+----------------------------------------
+- フロントエンド: Next.js
+- バックエンドAPI: Django + Django REST Framework
+- 認証・DB: Djangoで実装、API経由でNext.jsが連携
+
+■ Next.js開発でよく使うフォルダ構成（App Router + srcディレクトリ）
+----------------------------------------
+src/
+├── app/                  ← ページ定義とルーティング
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── api/              ← APIルート（必要に応じて）
+├── components/           ← UI部品
+├── features/             ← ドメイン別のロジックや機能
+├── lib/                  ← APIクライアントや認証処理など
+├── hooks/                ← カスタムフック
+├── types/                ← 型定義
+├── styles/               ← CSSやTailwind設定
+└── middleware.ts         ← 認証・ルーティング制御用
+
