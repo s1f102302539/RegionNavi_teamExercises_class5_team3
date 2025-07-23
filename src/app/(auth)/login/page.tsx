@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaGoogle } from 'react-icons/fa'; // GitHubも使いたい場合は FaGithub もインポート
 import { motion } from 'framer-motion';
-import { createClient } from '../../../lib/supabase/cliant'; // client.ts のパスを正しく指定
+import { createClient } from '@/lib/supabase/cliant';
 
 export default function LoginPage() {
   const router = useRouter();

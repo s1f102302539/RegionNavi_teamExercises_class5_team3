@@ -1,6 +1,5 @@
-// 例: components/CreatePost.tsx
 'use client';
-import { createClient } from '../../lib/supabase/cliant';
+import { createClient } from '@/lib/supabase/cliant';
 import { useRouter } from 'next/navigation';
 
 export default function CreatePost() {

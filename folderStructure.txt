@@ -20,7 +20,7 @@ project
 │   └── (画像などの静的ファイル)
 └── src/
     ├── app/
-    │   ├── (auth)/             # [提案] 認証関連ページグループ
+    │   ├── (auth)/             # 認証関連ページグループ
     │   │   ├── login/
     │   │   │   └── page.tsx    # ログインページ
     │   │   ├── signup/
@@ -32,7 +32,7 @@ project
     │   │   └── layout.tsx      # ランディングページ用のレイアウト
     │   │
     │   ├── (main)/             # ログイン後のメイン機能グループ
-    │   │   ├── home/           # [提案] ホーム専用ディレクトリ
+    │   │   ├── home/           # ホーム専用ディレクトリ
     │   │   │   └── page.tsx    # /home タイムラインページ
     │   │   │
     │   │   ├── mypage/         # マイページ関連
@@ -60,10 +60,10 @@ project
     │   │
     │   │   └── layout.tsx      # メイン機能用の共通レイアウト（サイドバーなど）
     │   │
-    │   ├── api/                # [補足] API Routes (バックエンド連携)
+    │   ├── api/                # API Routes (バックエンド連携)
     │   │   └── ...
     │   │
-    │   ├── components/         # [提案] コンポーネントの整理
+    │   ├── components/         # コンポーネントの整理
     │   │   ├── ui/             # 汎用的なUIパーツ
     │   │   │   ├── Button.tsx
     │   │   │   ├── Card.tsx
@@ -83,9 +83,9 @@ project
     │   ├── globals.css
     │   └── layout.tsx          # 全体のルートレイアウト (<html>, <body>)
     │
-    └── lib/                    # [提案] ヘルパー関数や外部連携など
+    └── lib/                    # ヘルパー関数や外部連携など
         ├── auth.ts
         ├── google-maps.ts
-        ├── supabase/
+        ├── supabase/           # supabase関連
             ├── cliant.tsx
             ├── server.tsx
