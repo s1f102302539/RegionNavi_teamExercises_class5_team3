@@ -17,33 +17,29 @@ export const metadata: Metadata = {
   description: "仮のSNSページ",
 };
 
-export default function RootLayout({
+export default function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
-      >
-        {/* ヘッダー */}
-        <header className="bg-gray-100 py-4 shadow-md">
-          <div className="container mx-auto px-4">
-            <h1 className="text-2xl font-bold">RERENAVI</h1>
-          </div>
-        </header>
+    <div className={`${geistSans.variable} ${geistMono.variable} font-sans min-h-screen flex flex-col`}>
+      {/* ヘッダー */}
+      <header className="bg-white py-4 shadow-md sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          <h1 className="text-2xl font-bold text-gray-800">RERENAVI</h1>
+        </div>
+      </header>
 
-        {/* メインコンテンツ */}
-        <main className="container mx-auto px-4 py-8 flex-1">
-          {children}
-        </main>
+      {/* メインコンテンツ */}
+      <main className="container mx-auto px-4 py-8 flex-1">
+        {children}
+      </main>
 
-        {/* フッター */}
-        <footer className="bg-gray-100 py-4 text-center text-sm text-gray-500">
-          &copy; 2025 RERENAVI. All rights reserved.
-        </footer>
-      </body>
-    </html>
+      {/* フッター */}
+      <footer className="bg-gray-100 py-4 text-center text-sm text-gray-500">
+        &copy; 2025 RERENAVI. All rights reserved.
+      </footer>
+    </div>
   );
 }

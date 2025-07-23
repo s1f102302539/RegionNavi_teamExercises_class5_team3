@@ -14,16 +14,10 @@ export const metadata: Metadata = {
   description: "RERENAVIへようこそ！",
 };
 
-export default function RootLayout({
+export default function LandingLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  return (
-    <html lang="ja">
-      <body className={`${notoSansJP.variable} antialiased`}>
-        {children}
-      </body>
-    </html>
-  );
+}) {
+  return <>{children}</>;
 }

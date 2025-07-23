@@ -1,6 +1,7 @@
 'use client'; 
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import "../globals.css";
 import LoadingScreen from '@/app/components/LoadingScreen';
@@ -52,17 +53,20 @@ export default function HomePage() {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">「地方の魅力」を</h1>
           <p className="mt-2 text-2xl md:text-3xl lg:text-4xl">楽しく知れるプラットフォーム。</p>
           
+          {/* [修正] legacyBehaviorを削除し、classNameをLinkコンポーネントに直接適用 */}
           <div className="mt-8 lg:mt-10 flex flex-col sm:flex-row gap-4 w-full">
-            <a href=''>
-              <button className="rounded-full bg-white px-8 md:px-12 py-3 md:py-4 text-lg md:text-xl font-bold shadow-lg transition hover:bg-gray-50 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                新規登録
-              </button>
-            </a>
-            <a href='../login'>
-              <button className="rounded-full bg-[#00A968] px-8 md:px-12 py-3 md:py-4 text-lg md:text-xl font-bold text-white shadow-lg transition hover:bg-[#008f58] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#00A968]">
-                ログイン
-              </button>
-            </a>
+            <Link 
+              href="/signup"
+              className="text-center rounded-full bg-white px-8 md:px-12 py-3 md:py-4 text-lg md:text-xl font-bold text-gray-800 shadow-lg transition hover:bg-gray-50 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              新規登録
+            </Link>
+            <Link 
+              href="/login"
+              className="text-center rounded-full bg-[#00A968] px-8 md:px-12 py-3 md:py-4 text-lg md:text-xl font-bold text-white shadow-lg transition hover:bg-[#008f58] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#00A968]"
+            >
+              ログイン
+            </Link>
           </div>
         </div>
 
