@@ -15,38 +15,77 @@
 ---
 
 ## 2. `src/` ディレクトリの中身
-src/
-├── app/                    # Next.js 13+ App Router (ルーティング、レイアウト、データ取得)
-│   ├── (auth)/             # 認証関連のルーティンググループ
-│   │   ├── login/page.tsx
-│   │   └── signup/page.tsx
-│   ├── (main)/             # メインコンテンツのルーティンググループ
-│   │   ├── page.tsx        # ホームフィードなど
-│   │   ├── profile/[userId]/page.tsx # ユーザープロフィール
-│   │   ├── post/[postId]/page.tsx    # 個別投稿ページ
-│   │   └── layout.tsx      # メインレイアウト（ナビゲーションバーなど）
-│   ├── api/                # API Routes (Serverless Functions)
-│   │   ├── auth/route.ts
-│   │   ├── posts/route.ts
-│   │   └── users/route.ts
-│   ├── layout.tsx          # グローバルレイアウト
-│   └── globals.css         # グローバルCSS
-├── components/             # 再利用可能なUIコンポーネント
-│   ├── auth/               # 認証関連コンポーネント (LoginForm.tsxなど)
-│   ├── common/             # 汎用UI要素 (Button.tsx, Input.tsxなど)
-│   ├── post/               # 投稿関連コンポーネント (PostCard.tsx, PostForm.tsxなど)
-│   ├── profile/            # プロフィール関連コンポーネント
-│   └── layout/             # レイアウト構成要素 (Header.tsx, Footer.tsxなど)
-├── hooks/                  # カスタムフック (ロジックの再利用)
-│   ├── useAuth.ts          # 認証状態管理
-│   ├── usePosts.ts         # 投稿の取得・操作
-│   └── useSupabase.ts      # Supabaseクライアント初期化
-├── lib/                    # ユーティリティ関数や設定ファイル
-│   ├── supabase/           # Supabase関連の設定・ヘルパー
-│   │   ├── client.ts       # クライアントサイドSupabaseインスタンス
-│   │   └── server.ts       # サーバーサイドSupabaseインスタンス
-│   ├── constants.ts        # 定数
-│   ├── utils.ts            # 一般的なユーティリティ関数
-│   └── types.ts            # グローバルなTypeScript型定義
-├── styles/                 # 共通スタイル (Tailwind CSSを使わない場合など)
-└── store/                  # 状態管理 (Zustand, Recoilなどを使用する場合)
+project
+├── public/
+│   └── (画像などの静的ファイル)
+└── src/
+    ├── app/
+    │   ├── (auth)/             # [提案] 認証関連ページグループ
+    │   │   ├── login/
+    │   │   │   └── page.tsx    # ログインページ
+    │   │   ├── signup/
+    │   │   │   └── page.tsx    # 新規会員登録ページ
+    │   │   └── layout.tsx      # 認証ページ用の共通レイアウト
+    │   │
+    │   ├── (landing)/          # 未ログイン時のトップページグループ
+    │   │   ├── page.tsx        # / (ルート) のランディングページ
+    │   │   └── layout.tsx      # ランディングページ用のレイアウト
+    │   │
+    │   ├── (main)/             # ログイン後のメイン機能グループ
+    │   │   ├── home/           # [提案] ホーム専用ディレクトリ
+    │   │   │   └── page.tsx    # /home タイムラインページ
+    │   │   │
+    │   │   ├── mypage/         # マイページ関連
+    │   │   │   ├── page.tsx    # /mypage 自分のプロフィール
+    │   │   │   └── edit/
+    │   │   │       └── page.tsx # /mypage/edit プロフィール編集
+    │   │   │
+    │   │   ├── profile/        # 他ユーザーのプロフィール
+    │   │   │   └── [userId]/
+    │   │   │       └── page.tsx # /profile/123 など
+    │   │   │
+    │   │   ├── quiz/           # クイズ機能関連
+    │   │   │   ├── page.tsx    # /quiz クイズトップ（都道府県一覧など）
+    │   │   │   └── [prefecture]/
+    │   │   │       └── page.tsx # /quiz/tokyo など
+    │   │   │
+    │   │   ├── stamprally/     # スタンプラリー機能
+    │   │   │   └── page.tsx    # /stamprally マップページ
+    │   │   │
+    │   │   ├── search/         # 検索機能
+    │   │   │   └── page.tsx    # /search 検索結果ページ
+    │   │   │
+    │   │   └── settings/       # 設定ページ
+    │   │       └── page.tsx    # /settings アカウント設定など
+    │   │
+    │   │   └── layout.tsx      # メイン機能用の共通レイアウト（サイドバーなど）
+    │   │
+    │   ├── api/                # [補足] API Routes (バックエンド連携)
+    │   │   └── ...
+    │   │
+    │   ├── components/         # [提案] コンポーネントの整理
+    │   │   ├── ui/             # 汎用的なUIパーツ
+    │   │   │   ├── Button.tsx
+    │   │   │   ├── Card.tsx
+    │   │   │   └── Modal.tsx
+    │   │   │
+    │   │   ├── layouts/        # レイアウトを構成するパーツ
+    │   │   │   ├── Header.tsx
+    │   │   │   ├── Sidebar.tsx
+    │   │   │   └── Footer.tsx
+    │   │   │
+    │   │   └── features/       # 機能ごとの特化したコンポーネント
+    │   │       ├── timeline/
+    │   │       ├── quiz/
+    │   │       ├── profile/
+    │   │       └── stamprally/
+    │   │
+    │   ├── globals.css
+    │   └── layout.tsx          # 全体のルートレイアウト (<html>, <body>)
+    │
+    └── lib/                    # [提案] ヘルパー関数や外部連携など
+        ├── auth.ts
+        ├── google-maps.ts
+        ├── supabase/
+            ├── cliant.tsx
+            ├── server.tsx
