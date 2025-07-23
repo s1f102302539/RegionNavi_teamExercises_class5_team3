@@ -53,12 +53,16 @@ export default function HomePage() {
           <p className="mt-2 text-2xl md:text-3xl lg:text-4xl">楽しく知れるプラットフォーム。</p>
           
           <div className="mt-8 lg:mt-10 flex flex-col sm:flex-row gap-4 w-full">
-            <button className="rounded-full bg-white px-8 md:px-12 py-3 md:py-4 text-lg md:text-xl font-bold shadow-lg transition hover:bg-gray-50 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300">
-              新規登録
-            </button>
-            <button className="rounded-full bg-[#00A968] px-8 md:px-12 py-3 md:py-4 text-lg md:text-xl font-bold text-white shadow-lg transition hover:bg-[#008f58] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#00A968]">
-              ログイン
-            </button>
+            <a href=''>
+              <button className="rounded-full bg-white px-8 md:px-12 py-3 md:py-4 text-lg md:text-xl font-bold shadow-lg transition hover:bg-gray-50 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                新規登録
+              </button>
+            </a>
+            <a href='../login'>
+              <button className="rounded-full bg-[#00A968] px-8 md:px-12 py-3 md:py-4 text-lg md:text-xl font-bold text-white shadow-lg transition hover:bg-[#008f58] hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#00A968]">
+                ログイン
+              </button>
+            </a>
           </div>
         </div>
 

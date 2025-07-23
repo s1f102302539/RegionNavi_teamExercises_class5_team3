@@ -1,0 +1,52 @@
+# Next.js + Supabase SNS開発 フォルダ構成案
+
+## 1. ルートディレクトリ (`/`)
+/
+├── public/                 # 静的ファイル（画像、フォントなど）
+├── src/                    # 主要なアプリケーションコード
+├── .env.local              # 環境変数（Supabaseキーなど）
+├── next.config.js          # Next.jsの設定ファイル
+├── package.json            # プロジェクトの依存関係
+├── postcss.config.js       # PostCSS設定
+├── tailwind.config.js      # Tailwind CSS設定
+├── tsconfig.json           # TypeScript設定
+└── README.md               # プロジェクトの説明
+
+---
+
+## 2. `src/` ディレクトリの中身
+src/
+├── app/                    # Next.js 13+ App Router (ルーティング、レイアウト、データ取得)
+│   ├── (auth)/             # 認証関連のルーティンググループ
+│   │   ├── login/page.tsx
+│   │   └── signup/page.tsx
+│   ├── (main)/             # メインコンテンツのルーティンググループ
+│   │   ├── page.tsx        # ホームフィードなど
+│   │   ├── profile/[userId]/page.tsx # ユーザープロフィール
+│   │   ├── post/[postId]/page.tsx    # 個別投稿ページ
+│   │   └── layout.tsx      # メインレイアウト（ナビゲーションバーなど）
+│   ├── api/                # API Routes (Serverless Functions)
+│   │   ├── auth/route.ts
+│   │   ├── posts/route.ts
+│   │   └── users/route.ts
+│   ├── layout.tsx          # グローバルレイアウト
+│   └── globals.css         # グローバルCSS
+├── components/             # 再利用可能なUIコンポーネント
+│   ├── auth/               # 認証関連コンポーネント (LoginForm.tsxなど)
+│   ├── common/             # 汎用UI要素 (Button.tsx, Input.tsxなど)
+│   ├── post/               # 投稿関連コンポーネント (PostCard.tsx, PostForm.tsxなど)
+│   ├── profile/            # プロフィール関連コンポーネント
+│   └── layout/             # レイアウト構成要素 (Header.tsx, Footer.tsxなど)
+├── hooks/                  # カスタムフック (ロジックの再利用)
+│   ├── useAuth.ts          # 認証状態管理
+│   ├── usePosts.ts         # 投稿の取得・操作
+│   └── useSupabase.ts      # Supabaseクライアント初期化
+├── lib/                    # ユーティリティ関数や設定ファイル
+│   ├── supabase/           # Supabase関連の設定・ヘルパー
+│   │   ├── client.ts       # クライアントサイドSupabaseインスタンス
+│   │   └── server.ts       # サーバーサイドSupabaseインスタンス
+│   ├── constants.ts        # 定数
+│   ├── utils.ts            # 一般的なユーティリティ関数
+│   └── types.ts            # グローバルなTypeScript型定義
+├── styles/                 # 共通スタイル (Tailwind CSSを使わない場合など)
+└── store/                  # 状態管理 (Zustand, Recoilなどを使用する場合)
