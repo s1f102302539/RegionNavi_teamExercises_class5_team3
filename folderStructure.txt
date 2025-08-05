@@ -1,0 +1,91 @@
+# Next.js + Supabase SNS開発 フォルダ構成案
+
+## 1. ルートディレクトリ (`/`)
+/
+├── public/                 # 静的ファイル（画像、フォントなど）
+├── src/                    # 主要なアプリケーションコード
+├── .env.local              # 環境変数（Supabaseキーなど）
+├── next.config.js          # Next.jsの設定ファイル
+├── package.json            # プロジェクトの依存関係
+├── postcss.config.js       # PostCSS設定
+├── tailwind.config.js      # Tailwind CSS設定
+├── tsconfig.json           # TypeScript設定
+└── README.md               # プロジェクトの説明
+
+---
+
+## 2. `src/` ディレクトリの中身
+project
+├── public/
+│   └── (画像などの静的ファイル)
+└── src/
+    ├── app/
+    │   ├── (auth)/             # 認証関連ページグループ
+    │   │   ├── login/
+    │   │   │   └── page.tsx    # ログインページ
+    │   │   ├── signup/
+    │   │   │   └── page.tsx    # 新規会員登録ページ
+    │   │   └── layout.tsx      # 認証ページ用の共通レイアウト
+    │   │
+    │   ├── (landing)/          # 未ログイン時のトップページグループ
+    │   │   ├── page.tsx        # / (ルート) のランディングページ
+    │   │   └── layout.tsx      # ランディングページ用のレイアウト
+    │   │
+    │   ├── (main)/             # ログイン後のメイン機能グループ
+    │   │   ├── home/           # ホーム専用ディレクトリ
+    │   │   │   └── page.tsx    # /home タイムラインページ
+    │   │   │
+    │   │   ├── mypage/         # マイページ関連
+    │   │   │   ├── page.tsx    # /mypage 自分のプロフィール
+    │   │   │   └── edit/
+    │   │   │       └── page.tsx # /mypage/edit プロフィール編集
+    │   │   │
+    │   │   ├── profile/        # 他ユーザーのプロフィール
+    │   │   │   └── [userId]/
+    │   │   │       └── page.tsx # /profile/123 など
+    │   │   │
+    │   │   ├── quiz/           # クイズ機能関連
+    │   │   │   ├── page.tsx    # /quiz クイズトップ（都道府県一覧など）
+    │   │   │   └── [prefecture]/
+    │   │   │       └── page.tsx # /quiz/tokyo など
+    │   │   │
+    │   │   ├── stamprally/     # スタンプラリー機能
+    │   │   │   └── page.tsx    # /stamprally マップページ
+    │   │   │
+    │   │   ├── search/         # 検索機能
+    │   │   │   └── page.tsx    # /search 検索結果ページ
+    │   │   │
+    │   │   └── settings/       # 設定ページ
+    │   │       └── page.tsx    # /settings アカウント設定など
+    │   │
+    │   │   └── layout.tsx      # メイン機能用の共通レイアウト（サイドバーなど）
+    │   │
+    │   ├── api/                # API Routes (バックエンド連携)
+    │   │   └── ...
+    │   │
+    │   ├── components/         # コンポーネントの整理
+    │   │   ├── ui/             # 汎用的なUIパーツ
+    │   │   │   ├── Button.tsx
+    │   │   │   ├── Card.tsx
+    │   │   │   └── Modal.tsx
+    │   │   │
+    │   │   ├── layouts/        # レイアウトを構成するパーツ
+    │   │   │   ├── Header.tsx
+    │   │   │   ├── Sidebar.tsx
+    │   │   │   └── Footer.tsx
+    │   │   │
+    │   │   └── features/       # 機能ごとの特化したコンポーネント
+    │   │       ├── timeline/
+    │   │       ├── quiz/
+    │   │       ├── profile/
+    │   │       └── stamprally/
+    │   │
+    │   ├── globals.css
+    │   └── layout.tsx          # 全体のルートレイアウト (<html>, <body>)
+    │
+    └── lib/                    # ヘルパー関数や外部連携など
+        ├── auth.ts
+        ├── google-maps.ts
+        ├── supabase/           # supabase関連
+            ├── cliant.tsx
+            ├── server.tsx
