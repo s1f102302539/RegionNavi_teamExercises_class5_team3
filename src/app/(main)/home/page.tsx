@@ -1,6 +1,6 @@
 // src/app/(main)/page.tsx
 
-import { createClient } from "../../../lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 // このページをサーバーコンポーネントとして非同期化
 export default async function HomePage() {
