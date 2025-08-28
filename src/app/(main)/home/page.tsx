@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import SideNavLeft from '@/app/components/layouts/SideNavLeft';
 import SideNavRight from '@/app/components/layouts/SideNavRight';
 
-// 各ページのコンテンツをインポート
+// ページコンポーネントのインポート
 import Timeline from '@/app/components/features/timeline/Timeline';
 import StampRallyPage from '@/app/components/pages/StampRallyPage';
 import QuizTopPage from '@/app/components/pages/QuizTopPage';
@@ -50,17 +50,21 @@ export default function HomePageController() {
   const isDuplicate = leftView === rightView;
 
   return (
-    // このページがサイドバーを含むレイアウト全体を描画します
-    <div className="flex min-h-screen w-full bg-yellow-50">
+
+    <div className="flex h-screen w-full bg-yellow-50">
       <SideNavLeft />
+      
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 lg:gap-5">
-        <div className="col-span-1 h-full overflow-y-auto p-4 sm:p-6 lg:p-8">
+        
+        <div className="col-span-1 h-screen overflow-y-auto p-4 sm:p-6 lg:p-8">
           <LeftComponent {...leftProps} />
         </div>
-        <div className="hidden lg:flex col-span-1 h-full overflow-y-auto p-4 sm:p-6 lg:p-8 border-l-2 border-yellow-200">
+        
+        <div className="hidden lg:flex col-span-1 h-screen overflow-y-auto p-4 sm:p-6 lg:p-8 border-l-2 border-yellow-200">
           {isDuplicate ? <DuplicateViewError /> : <RightComponent {...rightProps} />}
         </div>
       </div>
+      
       <div className="hidden lg:block">
         <SideNavRight />
       </div>
