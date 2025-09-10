@@ -1,4 +1,3 @@
-
 import Image from 'next/image';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
@@ -47,6 +46,7 @@ export default async function Timeline() {
               height={48}
               className="rounded-full bg-gray-200"
             />
+            
             <div className="ml-4">
               <div className="flex items-center space-x-2">
                 <p className="font-bold text-gray-900">{post.profiles?.username || '匿名ユーザー'}</p>
