@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 // ユーザー指定のパスからcreateClientをインポートします
-import { createClient } from '@/lib/supabase/cliant';
+import { createClient } from '@/lib/supabase/client';
 import type { FC } from 'react';
 
 // createClientを呼び出して、supabaseインスタンスを作成します

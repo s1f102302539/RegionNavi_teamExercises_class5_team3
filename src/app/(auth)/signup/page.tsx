@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/cliant';
+import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
