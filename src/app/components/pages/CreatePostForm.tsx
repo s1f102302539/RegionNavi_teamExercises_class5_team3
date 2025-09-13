@@ -1,6 +1,6 @@
 'use client';
 
-import { createClient } from '@/lib/supabase/cliant';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { FaImage, FaMapMarkerAlt } from 'react-icons/fa';
@@ -14,6 +14,7 @@ export default function CreatePostForm() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const content = formData.get('content') as string;
+    const form = event.currentTarget;
 
     if (!content.trim()) return; // 空白のみの投稿も防ぐ
 
@@ -38,9 +39,9 @@ export default function CreatePostForm() {
 
     // サーバーコンポーネントを再描画して新しい投稿を反映
     router.refresh();
-    
+    alert('投稿が完了しました');
     // フォームの内容をリセット
-    event.currentTarget.reset();
+    form.reset();
   };
 
   // --- ここから下がUI部分です ---

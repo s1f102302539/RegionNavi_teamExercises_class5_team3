@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { FaHome, FaMapMarkedAlt, FaQuestionCircle, FaSearch, FaUser } from 'react-icons/fa';
+import { FaHome, FaMapMarkedAlt, FaQuestionCircle, FaSearch, FaPlusSquare, FaUser } from 'react-icons/fa';
 
 const navItems = [
   { key: 'home', icon: FaHome, label: 'タイムライン' },
   { key: 'stamprally', icon: FaMapMarkedAlt, label: 'スタンプラリー' },
   { key: 'quiz', icon: FaQuestionCircle, label: 'クイズ' },
   { key: 'search', icon: FaSearch, label: '検索' },
+  { key: 'post', icon: FaPlusSquare, label: '投稿'},
   { key: 'mypage', icon: FaUser, label: 'マイページ' },
 ];
 

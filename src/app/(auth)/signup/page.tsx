@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/cliant';
+import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -26,7 +26,7 @@ export default function SignUpPage() {
       email: email,
       password: password,
       options: {
-        emailRedirectTo: `${location.origin}/auth/callback`,
+        emailRedirectTo: `${location.origin}/callback`,
         data: {
           user_name: username,
         },
