@@ -1,82 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FiSettings } from 'react-icons/fi';
 import { useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
+import PostCard from '../pages/PostCard'; 
 
-// プロフィールと投稿の型を定義しておくと便利です
+// (型定義は変更なし)
 type Profile = {
   username: string;
   avatar_url: string | null;
   bio: string | null;
 };
-
 type Post = {
   id: string;
   media_url: string | null;
   content: string;
+  created_at: string; // created_atの型を追加
+  profiles?: Profile | null; 
 };
 
 export default function MyPage() {
   const params = useSearchParams();
   const rightView = params.get('right') || 'stamprally';
 
-  // Supabaseクライアントを初期化
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const supabase = useMemo(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    ),
+    []
   );
 
-  // 状態を管理するためのStateを定義
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // ページ読み込み時にデータを取得する
   useEffect(() => {
     const fetchUserData = async () => {
-      // 1. 現在ログインしているユーザーを取得
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setCurrentUser(user);
 
-      if (user) {
-        // 2. ユーザーIDを使ってプロフィール情報を取得
-        const { data: profileData } = await supabase
-          .from('profiles') // あなたのプロフィールテーブル名
-          .select('username, avatar_url, bio')
-          .eq('id', user.id)
-          .single();
-        setProfile(profileData);
+        if (user) {
+          const [profileResponse, postsResponse] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('username, avatar_url, bio')
+              .eq('id', user.id)
+              .single(),
+            supabase
+              .from('posts')
+              .select('id, media_url, content, created_at') // `created_at`を追加！
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+          ]);
 
-        // 3. ユーザーIDを使って投稿一覧を取得
-        const { data: postsData } = await supabase
-          .from('posts') // あなたの投稿テーブル名
-          .select('id, media_url, content')
-          .eq('user_id', user.id) // あなたの投稿テーブルのユーザーIDカラム名
-          .order('created_at', { ascending: false });
-        
-        if(postsData) {
-          setPosts(postsData);
+          if (profileResponse.error) throw profileResponse.error;
+          if (postsResponse.error) throw postsResponse.error;
+
+          setProfile(profileResponse.data);
+          if (postsResponse.data) {
+            setPosts(postsResponse.data);
+          }
         }
+      } catch (err: any) {
+        console.error("データ取得エラー:", err);
+        setError("データの取得に失敗しました。");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUserData();
-  }, []); // 空の依存配列で初回レンダリング時のみ実行
+  }, [supabase]);
 
-  // データ読み込み中の表示
-  if (loading) {
-    return <div className="text-center p-8">読み込み中...</div>;
-  }
-  
-  // プロフィール情報が取得できなかった場合の表示
+  // これで、以降のコードでは `profile` が null ではないことが保証されます。
   if (!profile) {
-    return <div className="text-center p-8">ユーザー情報が見つかりません。ログインしているか確認してください。</div>;
+    return <div className="text-center p-8">ローディング中・・・</div>;
   }
+
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -107,27 +115,29 @@ export default function MyPage() {
         </div>
       </div>
       
-      <div className="mt-8">
+ <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">投稿一覧</h2>
         {posts.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {posts.map((post) => (
-              post.media_url && (
-                <div key={post.id} className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
-                  <Image 
-                    src={post.media_url} 
-                    alt={`投稿画像`} 
-                    width={400} 
-                    height={400} 
-                    className="w-full h-full object-cover" 
-                  />
-                </div>
-              )
-              
-            ))}
+          <div className="space-y-4"> {/* gridからspace-y-4に変更 */}
+            {posts.map((post) => {
+              // PostCardに渡すためのデータを作成します
+              // 投稿データ(post)とプロフィールデータ(profile)を組み合わせます
+              const postForCard = {
+                ...post,
+                profiles: profile // `profiles`キーにプロフィール情報を追加
+              };
+
+              return (
+                <PostCard 
+                  key={post.id} 
+                  post={postForCard} 
+                  currentUser={currentUser} 
+                />
+              );
+            })}
           </div>
         ) : (
-          <p className="text-gray-500">まだ投稿がありません。</p>
+          <p className="text-gray-500 text-center py-8">まだ投稿がありません。</p>
         )}
       </div>
     </div>

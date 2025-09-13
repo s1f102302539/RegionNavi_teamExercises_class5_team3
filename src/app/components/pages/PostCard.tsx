@@ -19,6 +19,8 @@ type Post = {
     username: string | null;
     avatar_url: string | null;
   } | null;
+  likes?: number; // ★いいね・コメント数を許容するよう修正
+  comments?: number;
 };
 
 type User = {
@@ -36,6 +38,7 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
   const supabase = createClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(post.content);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 投稿を削除する関数
   const handleDelete = async () => {
@@ -80,19 +83,11 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
     }
   };
 
-    // ★★★★★ デバッグ用のコードを追加 ★★★★★
-  console.log({
-    message: "IDをチェックしています",
-    currentUser_id: currentUser?.id,
-    post_author_id: post.user_id,
-    isAuthor: currentUser?.id === post.user_id,
-  });
-  // ★★★★★ ここまで ★★★★★
-
   // 現在ログインしているユーザーが投稿者かどうかを判定
   const isAuthor = currentUser?.id === post.user_id;
 
   return (
+    <>
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
       <div className="flex items-start">
         <Image
@@ -105,7 +100,7 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
         <div className="ml-4 flex-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold text-gray-900">{post.profiles?.username || '匿名ユーザー'}</p>
+              <p className={`font-bold ${isAuthor ? 'text-green-600' : 'text-gray-900'}`}>{post.profiles?.username || '匿名ユーザー'}</p>
               <p className="text-sm text-gray-500">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ja })}
               </p>
@@ -137,19 +132,24 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
             </div>
           ) : (
             // 通常表示のUI
-            <>
-              {post.content && (
-                <p className="text-gray-800 mt-2 mb-4 whitespace-pre-wrap">{post.content}</p>
-              )}
-              {post.media_url && (
-                <div className="rounded-xl overflow-hidden border mt-3">
-                  <Image
-                    src={post.media_url} alt="投稿画像" width={800} height={450}
-                    className="w-full h-auto object-cover"
-                  />
-                </div>
-              )}
-            </>
+              <>
+                {post.content && (
+                  <p className="text-gray-800 mt-2 mb-4 whitespace-pre-wrap">{post.content}</p>
+                )}
+                
+                {/* ★変更点: 画像表示部分にサイズ制限とクリックイベントを追加 */}
+                {post.media_url && (
+                  <div 
+                    className="rounded-xl overflow-hidden border mt-3 max-h-[500px] cursor-pointer"
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    <Image
+                      src={post.media_url} alt="投稿画像" width={800} height={450}
+                      className="w-full h-full object-cover" // h-autoからh-fullに変更
+                    />
+                  </div>
+                )}
+              </>
           )}
 
           {/* いいね、コメントなどのアイコン */}
@@ -164,5 +164,34 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
         </div>
       </div>
     </div>
+
+      {/* ★追加: 画像オーバーレイ表示用のJSX */}
+      {isModalOpen && post.media_url && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div 
+            className="relative max-w-[90vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()} 
+          >
+            <Image
+              src={post.media_url}
+              alt="投稿画像（拡大）"
+              width={1200}
+              height={1200}
+              className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain"
+            />
+          </div>
+          <button
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-5 right-5 text-white text-4xl"
+            aria-label="閉じる"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+    </>
   );
 }
