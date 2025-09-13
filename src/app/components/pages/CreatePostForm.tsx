@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { FaImage, FaMapMarkerAlt } from 'react-icons/fa';
 import { useRef, useState } from 'react'; // useRefとuseStateをインポート
+import { profile } from 'console';
 
 export default function CreatePostForm() {
   const router = useRouter();
@@ -50,6 +51,7 @@ export default function CreatePostForm() {
     }
 
     let imageUrl: string | null = null;
+    let userName: string | null = null;
 
     // 1. 画像が選択されていれば、Storageにアップロード
     if (imageFile) {
@@ -61,8 +63,6 @@ export default function CreatePostForm() {
       
       // 生成したファイル名でfilePathを作成
       const filePath = `${user.id}/${fileName}`;
-      
-      // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
       const { error: uploadError } = await supabase.storage
         .from('TimeLineImages')
@@ -84,6 +84,14 @@ export default function CreatePostForm() {
     }
 
     // 2. ユーザーネームを取得
+      const { data: profileData } = await supabase
+        .from('profiles') // あなたのプロフィールテーブル名
+        .select('username')
+        .eq('id', user.id)
+        .single();
+      
+      userName = profileData?.username || "Unsetting";
+
 
     // 3. postsテーブルにデータを挿入
     const { error: insertError } = await supabase.from('posts').insert({
@@ -108,6 +116,7 @@ export default function CreatePostForm() {
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-xl shadow">
+      <h1 className=''>{}</h1>
       <div className="flex space-x-4">
         <Image
           src="/logo_circle.png"

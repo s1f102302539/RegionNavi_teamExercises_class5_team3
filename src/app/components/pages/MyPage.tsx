@@ -12,6 +12,7 @@ import type { User } from '@supabase/supabase-js';
 type Profile = {
   username: string;
   avatar_url: string | null;
+  bio: string | null;
 };
 
 type Post = {
@@ -45,7 +46,7 @@ export default function MyPage() {
         // 2. ユーザーIDを使ってプロフィール情報を取得
         const { data: profileData } = await supabase
           .from('profiles') // あなたのプロフィールテーブル名
-          .select('username, avatar_url')
+          .select('username, avatar_url, bio')
           .eq('id', user.id)
           .single();
         setProfile(profileData);
@@ -91,6 +92,7 @@ export default function MyPage() {
           />
           <div className="md:ml-8 mt-4 md:mt-0 text-center md:text-left">
             <h1 className="text-3xl font-bold">{profile.username}</h1>
+            <h2 className='text-1xl'>{profile.bio}</h2>
             <div className="flex justify-center md:justify-start space-x-6 mt-4">
               {/* 投稿数は取得した投稿の件数を表示 */}
               <div><span className="font-bold">{posts.length}</span> 投稿</div>
