@@ -19,7 +19,7 @@ type Post = {
   id: string;
   media_url: string | null;
   content: string;
-  created_at: string; // created_atの型を追加
+  created_at: string;
   profiles?: Profile | null; 
 };
 
@@ -40,6 +40,9 @@ export default function MyPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  // ★ 変更点1: 表示用の完全なアバターURLを管理するStateを追加
+  const [displayAvatarUrl, setDisplayAvatarUrl] = useState<string>('/logo_circle.png');
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -56,15 +59,28 @@ export default function MyPage() {
               .single(),
             supabase
               .from('posts')
-              .select('id, media_url, content, created_at') // `created_at`を追加！
+              .select('id, media_url, content, created_at')
               .eq('user_id', user.id)
               .order('created_at', { ascending: false })
           ]);
 
           if (profileResponse.error) throw profileResponse.error;
           if (postsResponse.error) throw postsResponse.error;
+          
+          const fetchedProfile = profileResponse.data;
+          setProfile(fetchedProfile);
+          
+          // ★ 変更点2: 取得したパスから完全な公開URLを生成する処理を追加
+          if (fetchedProfile && fetchedProfile.avatar_url) {
+            const { data: imageData } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(fetchedProfile.avatar_url);
 
-          setProfile(profileResponse.data);
+            if (imageData && imageData.publicUrl) {
+              setDisplayAvatarUrl(imageData.publicUrl);
+            }
+          }
+
           if (postsResponse.data) {
             setPosts(postsResponse.data);
           }
@@ -80,19 +96,27 @@ export default function MyPage() {
     fetchUserData();
   }, [supabase]);
 
-  // これで、以降のコードでは `profile` が null ではないことが保証されます。
-  if (!profile) {
+  // ローディング表示はloading stateを使うように変更
+  if (loading) {
     return <div className="text-center p-8">ローディング中・・・</div>;
   }
-
+  
+  if (error) {
+    return <div className="text-center p-8 text-red-500">{error}</div>;
+  }
+  
+  // プロフィールがない場合の表示
+  if (!profile) {
+    return <div className="text-center p-8">プロフィールが見つかりませんでした。</div>;
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white p-6 rounded-xl shadow">
         <div className="flex flex-col md:flex-row items-center">
-          {/* 取得したデータを表示 */}
+          {/* ★ 変更点3: Imageのsrcを新しいState変数に変更 */}
           <Image 
-            src={profile.avatar_url || '/logo_circle.png'} // デフォルト画像を指定
+            src={displayAvatarUrl}
             alt={profile.username || 'アバター'} 
             width={120} 
             height={120} 
@@ -102,9 +126,7 @@ export default function MyPage() {
             <h1 className="text-3xl font-bold">{profile.username}</h1>
             <h2 className='text-1xl'>{profile.bio}</h2>
             <div className="flex justify-center md:justify-start space-x-6 mt-4">
-              {/* 投稿数は取得した投稿の件数を表示 */}
               <div><span className="font-bold">{posts.length}</span> 投稿</div>
-              {/* フォロー・フォロワー数は別途実装が必要です */}
               <div><span className="font-bold">150</span> フォロワー</div>
               <div><span className="font-bold">80</span> フォロー中</div>
             </div>
@@ -115,18 +137,15 @@ export default function MyPage() {
         </div>
       </div>
       
- <div className="mt-8">
+      <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">投稿一覧</h2>
         {posts.length > 0 ? (
-          <div className="space-y-4"> {/* gridからspace-y-4に変更 */}
+          <div className="space-y-4">
             {posts.map((post) => {
-              // PostCardに渡すためのデータを作成します
-              // 投稿データ(post)とプロフィールデータ(profile)を組み合わせます
               const postForCard = {
                 ...post,
-                profiles: profile // `profiles`キーにプロフィール情報を追加
+                profiles: profile
               };
-
               return (
                 <PostCard 
                   key={post.id} 
