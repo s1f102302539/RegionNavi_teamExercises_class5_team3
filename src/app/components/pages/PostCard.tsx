@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // ★ useEffect を追加
 import { FaHeart, FaComment, FaRegBookmark } from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -19,7 +19,7 @@ type Post = {
     username: string | null;
     avatar_url: string | null;
   } | null;
-  likes?: number; // ★いいね・コメント数を許容するよう修正
+  likes?: number;
   comments?: number;
 };
 
@@ -40,11 +40,28 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
   const [editedContent, setEditedContent] = useState(post.content);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // ★ 変更点1: 表示用のURLを管理するStateを追加
+  const [displayAvatarUrl, setDisplayAvatarUrl] = useState<string>('/logo_circle.png');
+
+  // ★ 変更点2: コンポーネント読み込み時にパスから完全なURLを生成
+  useEffect(() => {
+    // アバター画像のURLを生成
+    if (post.profiles?.avatar_url) {
+      const { data } = supabase.storage
+        .from('avatars') // MyPageで使っているバケット名に合わせてください
+        .getPublicUrl(post.profiles.avatar_url);
+      if (data?.publicUrl) {
+        setDisplayAvatarUrl(data.publicUrl);
+      }
+    }
+
+  }, [post.profiles?.avatar_url, post.media_url, supabase.storage]);
+
+
   // 投稿を削除する関数
   const handleDelete = async () => {
     if (!window.confirm('本当にこの投稿を削除しますか？')) return;
 
-    // postsテーブルからレコードを削除
     const { error } = await supabase.from('posts').delete().eq('id', post.id);
 
     if (error) {
@@ -52,22 +69,19 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
       return;
     }
     
-    // もし画像があれば、Storageからも削除
+    // post.media_urlはパスなので、Storageから削除する際もパスを直接使う
     if (post.media_url) {
-        const fileName = post.media_url.split('/').pop();
-        if (fileName) {
-            await supabase.storage.from('TimeLineImages').remove([`${post.user_id}/${fileName}`]);
-        }
+        await supabase.storage.from('TimeLineImages').remove([post.media_url]);
     }
 
-    router.refresh(); // ページを再読み込みしてUIを更新
+    router.refresh();
   };
 
   // 投稿を更新する関数
   const handleUpdate = async () => {
     if (!editedContent.trim()) {
-        alert('内容を入力してください。');
-        return;
+      alert('内容を入力してください。');
+      return;
     }
 
     const { error } = await supabase
@@ -78,24 +92,24 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
     if (error) {
       alert('更新に失敗しました: ' + error.message);
     } else {
-      setIsEditing(false); // 編集モードを終了
-      router.refresh(); // ページを再読み込み
+      setIsEditing(false);
+      router.refresh();
     }
   };
 
-  // 現在ログインしているユーザーが投稿者かどうかを判定
   const isAuthor = currentUser?.id === post.user_id;
 
   return (
     <>
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
       <div className="flex items-start">
+        {/* ★ 変更点3: アバター画像のsrcをState変数に変更 */}
         <Image
-          src={post.profiles?.avatar_url || '/logo_circle.png'}
+          src={displayAvatarUrl}
           alt={post.profiles?.username || 'ユーザー'}
           width={48}
           height={48}
-          className="rounded-full bg-gray-200"
+          className="rounded-full bg-gray-200 object-cover"
         />
         <div className="ml-4 flex-1">
           <div className="flex items-center justify-between">
@@ -105,7 +119,6 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ja })}
               </p>
             </div>
-            {/* 投稿者本人にのみ編集・削除ボタンを表示 */}
             {isAuthor && (
               <div className="flex space-x-2">
                 {!isEditing && (
@@ -116,7 +129,6 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
             )}
           </div>
 
-          {/* 編集モードのUI */}
           {isEditing ? (
             <div className="mt-2">
               <textarea
@@ -131,13 +143,12 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
               </div>
             </div>
           ) : (
-            // 通常表示のUI
               <>
                 {post.content && (
                   <p className="text-gray-800 mt-2 mb-4 whitespace-pre-wrap">{post.content}</p>
                 )}
                 
-                {/* ★変更点: 画像表示部分にサイズ制限とクリックイベントを追加 */}
+                {/* ★ 変更点4: 投稿画像のsrcをState変数に変更 */}
                 {post.media_url && (
                   <div 
                     className="rounded-xl overflow-hidden border mt-3 max-h-[500px] cursor-pointer"
@@ -145,27 +156,25 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
                   >
                     <Image
                       src={post.media_url} alt="投稿画像" width={800} height={450}
-                      className="w-full h-full object-cover" // h-autoからh-fullに変更
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 )}
               </>
           )}
 
-          {/* いいね、コメントなどのアイコン */}
           {!isEditing && (
              <div className="flex justify-between items-center mt-4 text-gray-500">
-                {/* ... アイコンボタン ... */}
-                <button className="flex items-center space-x-2 hover:text-pink-500 transition-colors duration-200"><FaHeart /> <span className="text-sm font-semibold">{post.likes}</span></button>
-                <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors duration-200"><FaComment /> <span className="text-sm font-semibold">{post.comments}</span></button>
-                <button className="hover:text-yellow-500 transition-colors duration-200"><FaRegBookmark size={18} /></button>
+               <button className="flex items-center space-x-2 hover:text-pink-500 transition-colors duration-200"><FaHeart /> <span className="text-sm font-semibold">{post.likes}</span></button>
+               <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors duration-200"><FaComment /> <span className="text-sm font-semibold">{post.comments}</span></button>
+               <button className="hover:text-yellow-500 transition-colors duration-200"><FaRegBookmark size={18} /></button>
              </div>
           )}
         </div>
       </div>
     </div>
 
-      {/* ★追加: 画像オーバーレイ表示用のJSX */}
+      {/* ★ 変更点5: モーダル画像のsrcもState変数に変更 */}
       {isModalOpen && post.media_url && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
