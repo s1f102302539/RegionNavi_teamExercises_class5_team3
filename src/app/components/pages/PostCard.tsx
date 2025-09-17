@@ -3,34 +3,31 @@
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react'; // ★ useEffect を追加
-import { FaHeart, FaComment, FaRegBookmark } from 'react-icons/fa';
+import { useState, useEffect, FormEvent } from 'react';
+import { FaHeart, FaComment, FaRegBookmark, FaRegHeart } from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { FiSend } from 'react-icons/fi';
+import CommentItem from './CommentItem';
 
-// 型定義
-type Post = {
-  id: string;
-  content: string;
-  media_url: string | null;
-  created_at: string;
-  user_id: string;
-  profiles: {
-    username: string | null;
-    avatar_url: string | null;
-  } | null;
-  likes?: number;
-  comments?: number;
-};
+import { Post, User, PostItemProps, CommentType } from '@/types/supabase'; 
 
-type User = {
-  id: string;
-};
-
-// コンポーネントのPropsの型定義
-type PostItemProps = {
-  post: Post;
-  currentUser: User | null;
+// ハッシュタグをリンクに変換するコンポーネント
+const PostContent = ({ content }: { content: string }) => {
+  const parts = content.split(/(#\w+)/g);
+  return (
+    <p className="text-gray-800 mt-2 mb-4 whitespace-pre-wrap">
+      {parts.map((part, index) =>
+        part.startsWith('#') ? (
+          <a key={index} href={`/search?tag=${part.substring(1)}`} className="text-blue-500 hover:underline">
+            {part}
+          </a>
+        ) : (
+          part
+        )
+      )}
+    </p>
+  );
 };
 
 export default function PostCard({ post, currentUser }: PostItemProps) {
@@ -40,21 +37,37 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
   const [editedContent, setEditedContent] = useState(post.content);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ★ 変更点1: 表示用のURLを管理するStateを追加
   const [displayAvatarUrl, setDisplayAvatarUrl] = useState<string>('/logo_circle.png');
+  // 投稿画像のフルパスを管理するState
+  const [displayMediaUrl, setDisplayMediaUrl] = useState<string | null>(null);
 
-  // ★ 変更点2: コンポーネント読み込み時にパスから完全なURLを生成
+  // いいね機能のState
+  const [isLiked, setIsLiked] = useState(post.is_liked_by_user);
+  const [likeCount, setLikeCount] = useState(post.likes);
+
+  // コメント機能のState
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [commentList, setCommentList] = useState<CommentType[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.comments);
+
+  // コンポーネント読み込み時にパスから完全なURLを生成
   useEffect(() => {
     // アバター画像のURLを生成
     if (post.profiles?.avatar_url) {
-      const { data } = supabase.storage
-        .from('avatars') // MyPageで使っているバケット名に合わせてください
-        .getPublicUrl(post.profiles.avatar_url);
+      const { data } = supabase.storage.from('avatars').getPublicUrl(post.profiles.avatar_url);
       if (data?.publicUrl) {
         setDisplayAvatarUrl(data.publicUrl);
       }
     }
-
+    // 投稿画像のURLを生成
+    if (post.media_url) {
+        const { data } = supabase.storage.from('TimeLineImages').getPublicUrl(post.media_url);
+        if (data?.publicUrl) {
+            setDisplayMediaUrl(data.publicUrl);
+        }
+    }
   }, [post.profiles?.avatar_url, post.media_url, supabase.storage]);
 
 
@@ -84,16 +97,80 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
       return;
     }
 
-    const { error } = await supabase
-      .from('posts')
-      .update({ content: editedContent })
-      .eq('id', post.id);
+  const { error } = await supabase
+    .from('posts')
+    .update({ content: editedContent })
+    .eq('id', post.id);
 
     if (error) {
       alert('更新に失敗しました: ' + error.message);
     } else {
       setIsEditing(false);
       router.refresh();
+    }
+  };
+
+    // ★ 変更点: いいねボタンの処理
+  const handleLikeToggle = async () => {
+    if (!currentUser) return alert('いいねするにはログインが必要です。');
+    
+    const currentlyLiked = !isLiked;
+    setIsLiked(currentlyLiked);
+    setLikeCount(likeCount + (currentlyLiked ? 1 : -1));
+
+    if (currentlyLiked) {
+      const { error } = await supabase.from('reactions').insert({ user_id: currentUser.id, post_id: post.id, reaction_type: 'good' });
+      if (error) {
+        setIsLiked(false);
+        setLikeCount(likeCount);
+        console.error('Error liking post:', error.message);
+      }
+    } else {
+      const { error } = await supabase.from('reactions').delete().match({ user_id: currentUser.id, post_id: post.id, reaction_type: 'good' });
+      if (error) {
+        setIsLiked(true);
+        setLikeCount(likeCount);
+        console.error('Error unliking post:', error.message);
+      }
+    }
+  };
+
+  // コメント
+  const toggleComments = async () => {
+  const shouldOpen = !isCommentsOpen;
+  setIsCommentsOpen(shouldOpen);
+
+  if (shouldOpen && commentList.length === 0) {
+    setIsLoadingComments(true);
+    const { data, error } = await supabase
+      .from('comments')
+      .select('*, profiles(username, avatar_url)')
+      .eq('post_id', post.id)
+      .order('created_at', { ascending: true });
+
+    if (data) setCommentList(data as CommentType[]);
+    if (error) console.error('Error fetching comments:', error.message);
+    setIsLoadingComments(false);
+  }
+};
+
+  // ★ 変更点: コメント投稿の処理
+  const handleCommentSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || newComment.trim() === '') return;
+
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({ content: newComment.trim(), user_id: currentUser.id, post_id: post.id })
+      .select('*, profiles(username, avatar_url)')
+      .single();
+
+    if (error) {
+      alert('コメントの投稿に失敗しました。');
+    } else if (data) {
+      setCommentList([...commentList, data as CommentType]);
+      setNewComment('');
+      setCommentCount(prevCount => prevCount + 1);
     }
   };
 
@@ -164,43 +241,51 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
           )}
 
           {!isEditing && (
-             <div className="flex justify-between items-center mt-4 text-gray-500">
-               <button className="flex items-center space-x-2 hover:text-pink-500 transition-colors duration-200"><FaHeart /> <span className="text-sm font-semibold">{post.likes}</span></button>
-               <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors duration-200"><FaComment /> <span className="text-sm font-semibold">{post.comments}</span></button>
-               <button className="hover:text-yellow-500 transition-colors duration-200"><FaRegBookmark size={18} /></button>
-             </div>
+            <>
+              <div className="flex justify-between items-center mt-4 text-gray-500">
+                <button onClick={handleLikeToggle} className="flex items-center space-x-2 hover:text-pink-500 transition-colors duration-200">
+                  {isLiked ? <FaHeart className="text-pink-500" /> : <FaRegHeart />}
+                  <span className="text-sm font-semibold">{likeCount}</span>
+                </button>
+                <button onClick={toggleComments} className="flex items-center space-x-2 hover:text-blue-500 transition-colors duration-200">
+                  <FaComment /> 
+                  <span className="text-sm font-semibold">{commentCount}</span>
+                </button>
+                <button className="hover:text-yellow-500 transition-colors duration-200"><FaRegBookmark size={18} /></button>
+              </div>
+              
+              {/* ★ 変更点: コメントセクションの描画 */}
+              {isCommentsOpen && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <form onSubmit={handleCommentSubmit} className="flex items-center mb-4">
+                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="コメントを追加..." className="flex-grow border rounded-full py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#00A968]" />
+                    <button type="submit" className="ml-2 p-2 rounded-full text-gray-500 hover:bg-gray-100 focus:outline-none"><FiSend size={20} /></button>
+                  </form>
+                    {isLoadingComments ? (<p className="text-sm text-gray-500">コメントを読み込み中...</p>) : (
+                      <div className="space-y-4"> {/* 見やすさのため space-y-3 -> space-y-4 に変更 */}
+                        {/* ★ 変更点3: CommentItem コンポーネントを使って表示 */}
+                        {commentList.map((comment) => (
+                          <CommentItem key={comment.id} comment={comment} />
+                        ))}
+                        {commentList.length === 0 && <p className="text-sm text-gray-500">まだコメントはありません。</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
+            </>
           )}
         </div>
       </div>
     </div>
 
-      {/* ★ 変更点5: モーダル画像のsrcもState変数に変更 */}
-      {isModalOpen && post.media_url && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
-          onClick={() => setIsModalOpen(false)}
-        >
-          <div 
-            className="relative max-w-[90vw] max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()} 
-          >
-            <Image
-              src={post.media_url}
-              alt="投稿画像（拡大）"
-              width={1200}
-              height={1200}
-              className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain"
-            />
-          </div>
-          <button
-            onClick={() => setIsModalOpen(false)}
-            className="absolute top-5 right-5 text-white text-4xl"
-            aria-label="閉じる"
-          >
-            &times;
-          </button>
+    {isModalOpen && displayMediaUrl && (
+      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={() => setIsModalOpen(false)}>
+        <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+          <Image src={post.media_url} alt="投稿画像（拡大）" width={1200} height={1200} className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain" />
         </div>
-      )}
+        <button onClick={() => setIsModalOpen(false)} className="absolute top-5 right-5 text-white text-4xl" aria-label="閉じる">&times;</button>
+      </div>
+    )}
     </>
   );
 }
