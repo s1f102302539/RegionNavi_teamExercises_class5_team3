@@ -9,19 +9,46 @@ import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { FiSend } from 'react-icons/fi';
 import CommentItem from './CommentItem';
-
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Post, User, PostItemProps, CommentType } from '@/types/supabase'; 
 
 // ハッシュタグをリンクに変換するコンポーネント
 const PostContent = ({ content }: { content: string }) => {
-  const parts = content.split(/(#\w+)/g);
-  return (
+  // ★ 現在のURLパラメータを取得
+  const currentParams = useSearchParams();
+
+  // ★ レイアウトに合わせたハッシュタグ検索URLを生成する関数
+  const createHashtagSearchUrl = (tag: string) => {
+    // 現在のURLパラメータをベースに、新しいパラメータを作成
+    const newParams = new URLSearchParams(currentParams.toString());
+
+    // 1. 左の画面を 'search' に設定
+    newParams.set('left', 'search');
+    
+    // 2. 検索したいハッシュタグの 'tag' を設定
+    newParams.set('tag', tag);
+    
+    // 3. 右の画面の状態は維持される
+
+    return `/home?${newParams.toString()}`;
+  };
+  
+  // 正規表現は前回修正した日本語対応版を使用
+  const parts = content.split(/(#[^\s#]+)/g);
+  
+    return (
     <p className="text-gray-800 mt-2 mb-4 whitespace-pre-wrap">
       {parts.map((part, index) =>
-        part.startsWith('#') ? (
-          <a key={index} href={`/search?tag=${part.substring(1)}`} className="text-blue-500 hover:underline">
+        part.match(/#[^\s#]+/) ? (
+          <Link
+            key={index}
+            // ★ 生成したURLをリンク先として使用
+            href={createHashtagSearchUrl(part.substring(1))}
+            className="text-blue-500 hover:underline"
+          >
             {part}
-          </a>
+          </Link>
         ) : (
           part
         )
@@ -222,7 +249,7 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
           ) : (
               <>
                 {post.content && (
-                  <p className="text-gray-800 mt-2 mb-4 whitespace-pre-wrap">{post.content}</p>
+                  <PostContent content={post.content} />
                 )}
                 
                 {/* ★ 変更点4: 投稿画像のsrcをState変数に変更 */}
