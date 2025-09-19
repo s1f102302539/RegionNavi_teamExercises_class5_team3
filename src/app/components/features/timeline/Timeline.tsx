@@ -1,11 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import PostCard from '../../pages/PostCard';
+import { Post } from '@/types/supabase';
 
-// propsの型を定義
 type TimelineProps = {
-  userId?: string; // オプショナルなプロパティとしてuserIdを追加
-  title?: string;  // 表示するタイトルもpropsで変更できるようにすると便利
+  userId?: string;
+  title?: string;
 };
 
 export default async function Timeline({ userId, title = "タイムライン" }: TimelineProps) {
@@ -25,20 +25,19 @@ export default async function Timeline({ userId, title = "タイムライン" }:
 
   const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-  // ベースとなるクエリを作成
-  let query = supabase
-    .from('posts')
-    .select(`*, profiles (username, avatar_url)`)
-    .order('created_at', { ascending: false })
-    .limit(100);
+  // RPC関数を呼び出す準備
+  let rpcCall;
 
-  // もしuserIdがpropsとして渡されていたら、そのユーザーの投稿に絞り込む
   if (userId) {
-    query = query.eq('user_id', userId);
+    // userIdがある場合：パラメータを付けてRPCを呼び出す
+    rpcCall = supabase.rpc('get_posts_with_details', { filter_user_id: userId });
+  } else {
+    // userIdがない場合：パラメータなしでRPCを呼び出す（全ユーザーの投稿を取得）
+    rpcCall = supabase.rpc('get_posts_with_details');
   }
 
-  // クエリを実行
-  const { data: posts, error } = await query;
+  // RPC関数を実行してデータを取得
+  const { data: posts, error } = await rpcCall;
 
 
   if (error) {
@@ -55,7 +54,7 @@ export default async function Timeline({ userId, title = "タイムライン" }:
       <h1 className="text-2xl font-bold text-gray-800 mb-4">{title}</h1>
       <div className="space-y-4">
         {posts.map((post) => (
-          <PostCard key={post.id} post={post} currentUser={currentUser} />
+          <PostCard key={post.id} post={post as unknown as Post} currentUser={currentUser} />
         ))}
       </div>
     </div>
