@@ -7,20 +7,14 @@ import { FiSettings } from 'react-icons/fi';
 import { useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
-import PostCard from '../pages/PostCard'; 
+import PostCard from '../pages/PostCard';
+import { PostWithDetails } from '@/types/supabase';
 
 // (型定義は変更なし)
 type Profile = {
   username: string;
   avatar_url: string | null;
   bio: string | null;
-};
-type Post = {
-  id: string;
-  media_url: string | null;
-  content: string;
-  created_at: string;
-  profiles?: Profile | null; 
 };
 
 export default function MyPage() {
@@ -38,10 +32,8 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PostWithDetails[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  
-  // ★ 変更点1: 表示用の完全なアバターURLを管理するStateを追加
   const [displayAvatarUrl, setDisplayAvatarUrl] = useState<string>('/logo_circle.png');
 
   useEffect(() => {
@@ -50,18 +42,17 @@ export default function MyPage() {
         const { data: { user } } = await supabase.auth.getUser();
         setCurrentUser(user);
 
+
         if (user) {
+          // ★★★ 投稿取得部分をRPC呼び出しに変更 ★★★
           const [profileResponse, postsResponse] = await Promise.all([
             supabase
               .from('profiles')
               .select('username, avatar_url, bio')
               .eq('id', user.id)
               .single(),
-            supabase
-              .from('posts')
-              .select('id, media_url, content, created_at')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false })
+            // RPCを呼び出して、自分の投稿のみを取得
+            supabase.rpc('get_posts_with_details', { filter_user_id: user.id })
           ]);
 
           if (profileResponse.error) throw profileResponse.error;
@@ -70,7 +61,6 @@ export default function MyPage() {
           const fetchedProfile = profileResponse.data;
           setProfile(fetchedProfile);
           
-          // ★ 変更点2: 取得したパスから完全な公開URLを生成する処理を追加
           if (fetchedProfile && fetchedProfile.avatar_url) {
             const { data: imageData } = supabase.storage
               .from('avatars')
@@ -82,7 +72,8 @@ export default function MyPage() {
           }
 
           if (postsResponse.data) {
-            setPosts(postsResponse.data);
+            // ★ 型アサーションを追加
+            setPosts(postsResponse.data as PostWithDetails[]);
           }
         }
       } catch (err: any) {
@@ -114,7 +105,6 @@ export default function MyPage() {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white p-6 rounded-xl shadow">
         <div className="flex flex-col md:flex-row items-center">
-          {/* ★ 変更点3: Imageのsrcを新しいState変数に変更 */}
           <Image 
             src={displayAvatarUrl}
             alt={profile.username || 'アバター'} 
@@ -137,23 +127,17 @@ export default function MyPage() {
         </div>
       </div>
       
-      <div className="mt-8">
+     <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">投稿一覧</h2>
         {posts.length > 0 ? (
           <div className="space-y-4">
-            {posts.map((post) => {
-              const postForCard = {
-                ...post,
-                profiles: profile
-              };
-              return (
-                <PostCard 
-                  key={post.id} 
-                  post={postForCard} 
-                  currentUser={currentUser} 
-                />
-              );
-            })}
+            {posts.map((post) => (
+              <PostCard
+                key={post.id} 
+                post={post} // ★ RPCからのデータをそのまま渡すだけでOK！
+                currentUser={currentUser} 
+              />
+            ))}
           </div>
         ) : (
           <p className="text-gray-500 text-center py-8">まだ投稿がありません。</p>

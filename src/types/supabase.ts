@@ -39,8 +39,56 @@ export type User = {
   id: string;
 };
 
-// コンポーネントのPropsの型定義
+
+export type UserResult = {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+};
+
+// stampsテーブルの型定義 (緯度・経度を追加)
+export type Stamp = {
+  id: string;
+  name: string;
+  description: string | null;
+  prefecture: string | null;
+  latitude: number | null;  // 緯度を追加
+  longitude: number | null; // 経度を追加
+};
+
+// RPC関数から返ってくる生のデータの型
+export type PostWithDetails = {
+  id: string;
+  user_id: string;
+  media_url: string | null;
+  content: string;
+  created_at: string;
+  username: string | null;
+  avatar_url: string | null;
+  like_count: number;
+  comment_count: number;
+  is_liked_by_user: boolean;
+};
+
+// PostCardコンポーネントが props として必要とする post オブジェクトの型
+export type PostForCard = {
+  id: string;
+  user_id: string;
+  media_url: string | null;
+  content: string;
+  created_at: string;
+  profiles: { // PostCardはprofilesオブジェクトを期待している
+    username: string | null;
+    avatar_url: string | null;
+  } | null;
+  likes: number; // PostCardが期待するプロパティ名
+  comments: number; // PostCardが期待するプロパティ名
+  is_liked_by_user: boolean;
+};
+
+// PostCardコンポーネントのProps全体の型
 export type PostItemProps = {
-  post: Post;
+  post: PostForCard;
   currentUser: User | null;
 };
