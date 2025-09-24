@@ -7,13 +7,7 @@ import UserCard from '../pages/UserCard'; // ★ UserCardをインポート
 import type { User } from '@supabase/supabase-js';
 import { Post } from '@/types/supabase';
 import { useSearchParams } from 'next/navigation'
-
-type UserResult = {
-  id: string;
-  username: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-};
+import type { UserResult } from '@/types/supabase';
 
 export default function SearchPage() {
   const supabase = createClient();
