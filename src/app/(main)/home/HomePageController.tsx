@@ -5,32 +5,43 @@ import SideNavLeft from '@/app/components/layouts/SideNavLeft';
 import SideNavRight from '@/app/components/layouts/SideNavRight';
 
 // ページコンポーネントのインポート
-// import Timeline from '@/app/components/features/timeline/Timeline';
 import StampRallyPage from '@/app/components/pages/StampRallyPage';
 import QuizTopPage from '@/app/components/pages/QuizTopPage';
 import SearchPage from '@/app/components/pages/SearchPage';
 import CreatePostForm from '@/app/components/pages/CreatePostForm';
 import MyPage from '@/app/components/pages/MyPage';
 import MypageEditPage from '@/app/components/pages/MypageEditPage';
-import PrefectureQuizPage from '@/app/components/pages/PrefectureQuizPage';
+// クイズ挑戦ページのインポート (ファイル名がQuizChallengePage.tsxであると仮定)
+import PrefectureQuizPage from '@/app/components/pages/QuizChallengePage';
+// ★ 1. QuizCalendarPageをインポート
+import QuizCalendarPage from '@/app/components/pages/QuizCalendarPage';
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
-  // home: Timeline,
   stamprally: StampRallyPage,
   quiz: QuizTopPage,
   search: SearchPage,
   post: CreatePostForm,
   mypage: MyPage,
   'mypage-edit': MypageEditPage,
+  // ★ 2. 対応表にカレンダーページを追加
+  'quiz-calendar': QuizCalendarPage,
 };
 
-// getComponent関数を修正して、propsで受け取ったtimelineComponentを扱えるようにする
+// getComponent関数を修正
 const getComponent = (viewKey: string, timelineComponent: React.ReactNode) => {
   if (!viewKey || viewKey === 'home') {
-    // コンポーネントの代わりに、受け取ったJSXをそのまま返す関数を返す
     return { Component: () => <>{timelineComponent}</>, props: {} };
   }
+
+  // ★ 3. 'quiz-'で始まるキーの処理を修正
+  // 'quiz-calendar'は除外し、都道府県クイズのみをここで処理する
+  if (viewKey.startsWith('quiz-') && viewKey !== 'quiz-calendar') {
+    return { Component: PrefectureQuizPage, props: {} };
+  }
+  
+  // 対応表からコンポーネントを探す (quiz-calendarはここで見つかる)
   const Component = componentMap[viewKey];
+  
   // もし一致するものがなければTimelineを表示
   if (!Component) {
     return { Component: () => <>{timelineComponent}</>, props: {} };
@@ -51,14 +62,12 @@ export default function HomePageClient({ timelineComponent }: { timelineComponen
   const leftView = params.get('left') || 'home';
   const rightView = params.get('right') || 'stamprally';
 
-  // propsで受け取ったtimelineComponentをgetComponentに渡す
   const { Component: LeftComponent, props: leftProps } = getComponent(leftView, timelineComponent);
   const { Component: RightComponent, props: rightProps } = getComponent(rightView, timelineComponent);
 
   const isDuplicate = leftView === rightView;
 
   return (
-
     <div className="flex h-screen w-full bg-yellow-50">
       <SideNavLeft />
       
