@@ -1,11 +1,21 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import PostCard from '../../pages/PostCard';
-import { Post } from '@/types/supabase';
+import { Post, User, PostWithDetails } from '@/types/supabase';
 
 type TimelineProps = {
   userId?: string;
   title?: string;
+};
+
+type PostForCard = PostWithDetails & {
+  profiles: {
+    username: string | null;
+    avatar_url: string | null;
+  } | null;
+  likes: number;
+  comments: number;
+  is_liked_by_user: boolean;
 };
 
 export default async function Timeline({ userId, title = "タイムライン" }: TimelineProps) {
@@ -37,7 +47,8 @@ export default async function Timeline({ userId, title = "タイムライン" }:
   }
 
   // RPC関数を実行してデータを取得
-  const { data: posts, error } = await rpcCall;
+  const { data: postsData, error } = await rpcCall;
+  const posts = postsData as PostForCard[];
 
 
   if (error) {
@@ -53,8 +64,12 @@ export default async function Timeline({ userId, title = "タイムライン" }:
       {/* propsで受け取ったタイトルを表示 */}
       <h1 className="text-2xl font-bold text-gray-800 mb-4">{title}</h1>
       <div className="space-y-4">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post as unknown as Post} currentUser={currentUser} />
+        {posts.map((post: PostForCard) => ( // postに明示的に型を指定
+          <PostCard 
+            key={post.id} 
+            post={post} // 型が一致しているので、危険な 'as unknown as Post' は不要
+            currentUser={currentUser} 
+          />
         ))}
       </div>
     </div>

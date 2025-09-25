@@ -1,52 +1,65 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SideNavLeft from '@/app/components/layouts/SideNavLeft';
 import SideNavRight from '@/app/components/layouts/SideNavRight';
+import { createClient } from '@/lib/supabase/client'; // ★ 2. Supabaseクライアントを追加
+import type { User } from '@supabase/supabase-js'; // ★ 3. User型を追加
 
 // ページコンポーネントのインポート
 import StampRallyPage from '@/app/components/pages/StampRallyPage';
 import QuizTopPage from '@/app/components/pages/QuizTopPage';
 import SearchPage from '@/app/components/pages/SearchPage';
 import CreatePostForm from '@/app/components/pages/CreatePostForm';
-import MyPage from '@/app/components/pages/MyPage';
 import MypageEditPage from '@/app/components/pages/MypageEditPage';
 // クイズ挑戦ページのインポート (ファイル名がQuizChallengePage.tsxであると仮定)
 import PrefectureQuizPage from '@/app/components/pages/QuizChallengePage';
 // ★ 1. QuizCalendarPageをインポート
 import QuizCalendarPage from '@/app/components/pages/QuizCalendarPage';
+import MyPage from '@/app/components/pages/MyPage'; // ★ 4. 作成したMypageをインポート
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
   stamprally: StampRallyPage,
   quiz: QuizTopPage,
   search: SearchPage,
   post: CreatePostForm,
-  mypage: MyPage,
   'mypage-edit': MypageEditPage,
-  // ★ 2. 対応表にカレンダーページを追加
   'quiz-calendar': QuizCalendarPage,
 };
 
 // getComponent関数を修正
-const getComponent = (viewKey: string, timelineComponent: React.ReactNode) => {
+// ★ 修正: paneプロパティやcloneElementを必要としないシンプルな構造に戻す
+const getComponent = (
+  viewKey: string | null, 
+  timelineComponent: React.ReactNode,
+  currentUser: User | null,
+  targetUserId: string | null
+): React.ReactNode => {
   if (!viewKey || viewKey === 'home') {
-    return { Component: () => <>{timelineComponent}</>, props: {} };
+    return <>{timelineComponent}</>;
   }
 
-  // ★ 3. 'quiz-'で始まるキーの処理を修正
-  // 'quiz-calendar'は除外し、都道府県クイズのみをここで処理する
-  if (viewKey.startsWith('quiz-') && viewKey !== 'quiz-calendar') {
-    return { Component: PrefectureQuizPage, props: {} };
+  if (viewKey === 'mypage') {
+    if (currentUser) {
+      // paneプロパティは不要
+      return <MyPage userId={currentUser.id} />;
+    }
+    return <>{timelineComponent}</>;
+  }
+
+  if (viewKey === 'userprofile' && targetUserId) {
+    // paneプロパティは不要
+    return <MyPage userId={targetUserId} />;
   }
   
-  // 対応表からコンポーネントを探す (quiz-calendarはここで見つかる)
   const Component = componentMap[viewKey];
   
-  // もし一致するものがなければTimelineを表示
   if (!Component) {
-    return { Component: () => <>{timelineComponent}</>, props: {} };
+    return <>{timelineComponent}</>;
   }
-  return { Component, props: {} };
+  // paneプロパティは不要
+  return <Component />;
 };
 
 
@@ -61,9 +74,21 @@ export default function HomePageClient({ timelineComponent }: { timelineComponen
   const params = useSearchParams();
   const leftView = params.get('left') || 'home';
   const rightView = params.get('right') || 'stamprally';
+  const targetUserId = params.get('userId');
 
-  const { Component: LeftComponent, props: leftProps } = getComponent(leftView, timelineComponent);
-  const { Component: RightComponent, props: rightProps } = getComponent(rightView, timelineComponent);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+    fetchUser();
+  }, [supabase]);
+
+  const LeftComponent = getComponent(leftView, timelineComponent, currentUser, targetUserId);
+  const RightComponent = getComponent(rightView, timelineComponent, currentUser, targetUserId);
 
   const isDuplicate = leftView === rightView;
 
@@ -74,11 +99,12 @@ export default function HomePageClient({ timelineComponent }: { timelineComponen
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 lg:gap-5">
         
         <div className="col-span-1 h-screen overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <LeftComponent {...leftProps} />
+          {/* ★ そのままコンポーネントを配置する */}
+          {LeftComponent}
         </div>
         
         <div className="hidden lg:flex col-span-1 h-screen overflow-y-auto p-4 sm:p-6 lg:p-8 border-l-2 border-yellow-200">
-          {isDuplicate ? <DuplicateViewError /> : <RightComponent {...rightProps} />}
+          {isDuplicate ? <DuplicateViewError /> : RightComponent}
         </div>
       </div>
       
