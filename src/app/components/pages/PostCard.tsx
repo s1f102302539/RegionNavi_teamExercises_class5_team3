@@ -11,7 +11,12 @@ import { FiSend } from 'react-icons/fi';
 import CommentItem from './CommentItem';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Post, User, PostItemProps, CommentType } from '@/types/supabase'; 
+import { Post, User, CommentType } from '@/types/supabase'; 
+
+export interface PostItemProps {
+  post: any; // PostForCardの型
+  currentUser: User | null;
+}
 
 // ハッシュタグをリンクに変換するコンポーネント
 const PostContent = ({ content }: { content: string }) => {
@@ -60,6 +65,7 @@ const PostContent = ({ content }: { content: string }) => {
 export default function PostCard({ post, currentUser }: PostItemProps) {
   const router = useRouter();
   const supabase = createClient();
+  const params = useSearchParams();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(post.content);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,14 +76,16 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
 
   // いいね機能のState
   const [isLiked, setIsLiked] = useState(post.is_liked_by_user);
-  const [likeCount, setLikeCount] = useState(post.likes);
+  const [likeCount, setLikeCount] = useState<number>(post.likes); 
 
   // コメント機能のState
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [commentList, setCommentList] = useState<CommentType[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoadingComments, setIsLoadingComments] = useState(false);
-  const [commentCount, setCommentCount] = useState(post.comments);
+  const [commentCount, setCommentCount] = useState<number>(post.comments);
+
+  const rightView = params.get('right') || 'stamprally';
 
   // コンポーネント読み込み時にパスから完全なURLを生成
   useEffect(() => {
@@ -201,24 +209,38 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
     }
   };
 
+  const userProfileUrl = (() => {
+    const newParams = new URLSearchParams(params.toString());
+    // 常に左画面をuserprofileに設定
+    newParams.set('left', 'userprofile');
+    newParams.set('userId', post.user_id);
+    // 右画面の状態は new URLSearchParams(params.toString()) によって維持される
+    return `/home?${newParams.toString()}`;
+  })();
+
   const isAuthor = currentUser?.id === post.user_id;
 
   return (
     <>
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
       <div className="flex items-start">
-        {/* ★ 変更点3: アバター画像のsrcをState変数に変更 */}
-        <Image
-          src={displayAvatarUrl}
-          alt={post.profiles?.username || 'ユーザー'}
-          width={48}
-          height={48}
-          className="rounded-full bg-gray-200 object-cover"
-        />
+        <Link href={userProfileUrl}>
+          <Image
+            src={displayAvatarUrl}
+            alt={post.profiles?.username || 'ユーザー'}
+            width={48}
+            height={48}
+            className="rounded-full bg-gray-200 object-cover"
+          />
+        </Link>
         <div className="ml-4 flex-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className={`font-bold ${isAuthor ? 'text-green-600' : 'text-gray-900'}`}>{post.profiles?.username || '匿名ユーザー'}</p>
+              <Link href={userProfileUrl}>
+               <p className={`font-bold ${isAuthor ? 'text-green-600' : 'text-gray-900'} hover:underline`}>
+                  {post.profiles?.username || '匿名ユーザー'}
+                </p>
+              </Link>
               <p className="text-sm text-gray-500">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ja })}
               </p>
@@ -308,7 +330,7 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
     {isModalOpen && displayMediaUrl && (
       <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={() => setIsModalOpen(false)}>
         <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-          <Image src={post.media_url} alt="投稿画像（拡大）" width={1200} height={1200} className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain" />
+          <Image src={displayMediaUrl} alt="投稿画像（拡大）" width={1200} height={1200} className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain" />
         </div>
         <button onClick={() => setIsModalOpen(false)} className="absolute top-5 right-5 text-white text-4xl" aria-label="閉じる">&times;</button>
       </div>
