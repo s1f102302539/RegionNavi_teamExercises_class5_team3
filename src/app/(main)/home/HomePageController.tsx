@@ -52,6 +52,10 @@ const getComponent = (
     // paneプロパティは不要
     return <MyPage userId={targetUserId} />;
   }
+
+  if (viewKey.startsWith('quiz-') && viewKey !== 'quiz-calendar') {
+    return <PrefectureQuizPage />;
+  }
   
   const Component = componentMap[viewKey];
   
