@@ -6,6 +6,7 @@ import { Post, User, PostWithDetails } from '@/types/supabase';
 type TimelineProps = {
   userId?: string;
   title?: string;
+  side: 'left' | 'right'; // 追加: sideプロパティ
 };
 
 type PostForCard = PostWithDetails & {
@@ -18,7 +19,7 @@ type PostForCard = PostWithDetails & {
   is_liked_by_user: boolean;
 };
 
-export default async function Timeline({ userId, title = "タイムライン" }: TimelineProps) {
+export default async function Timeline({ userId, title = "タイムライン", side }: TimelineProps) {
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -69,6 +70,7 @@ export default async function Timeline({ userId, title = "タイムライン" }:
             key={post.id} 
             post={post} // 型が一致しているので、危険な 'as unknown as Post' は不要
             currentUser={currentUser} 
+            side={side} // 追加: sideプロパティを渡す
           />
         ))}
       </div>

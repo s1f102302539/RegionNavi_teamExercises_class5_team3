@@ -16,10 +16,11 @@ import { Post, User, CommentType } from '@/types/supabase';
 export interface PostItemProps {
   post: any; // PostForCardの型
   currentUser: User | null;
+  side: 'left' | 'right'; // 追加: sideプロパティ
 }
 
 // ハッシュタグをリンクに変換するコンポーネント
-const PostContent = ({ content }: { content: string }) => {
+const PostContent = ({ content, side }: { content: string, side: 'left' | 'right'}) => {
   // ★ 現在のURLパラメータを取得
   const currentParams = useSearchParams();
 
@@ -28,14 +29,9 @@ const PostContent = ({ content }: { content: string }) => {
     // 現在のURLパラメータをベースに、新しいパラメータを作成
     const newParams = new URLSearchParams(currentParams.toString());
 
-    // 1. 左の画面を 'search' に設定
-    newParams.set('left', 'search');
-    
-    // 2. 検索したいハッシュタグの 'tag' を設定
+    newParams.set(side, 'search');
     newParams.set('tag', tag);
     
-    // 3. 右の画面の状態は維持される
-
     return `/home?${newParams.toString()}`;
   };
   
@@ -48,7 +44,7 @@ const PostContent = ({ content }: { content: string }) => {
         part.match(/#[^\s#]+/) ? (
           <Link
             key={index}
-            // ★ 生成したURLをリンク先として使用
+            // 生成したURLをリンク先として使用
             href={createHashtagSearchUrl(part.substring(1))}
             className="text-blue-500 hover:underline"
           >
@@ -62,7 +58,7 @@ const PostContent = ({ content }: { content: string }) => {
   );
 };
 
-export default function PostCard({ post, currentUser }: PostItemProps) {
+export default function PostCard({ post, currentUser, side }: PostItemProps) {
   const router = useRouter();
   const supabase = createClient();
   const params = useSearchParams();
@@ -87,6 +83,8 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
 
   const rightView = params.get('right') || 'stamprally';
 
+  console.log('渡されたpostデータ:', post);
+
   // コンポーネント読み込み時にパスから完全なURLを生成
   useEffect(() => {
     // アバター画像のURLを生成
@@ -98,10 +96,17 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
     }
     // 投稿画像のURLを生成
     if (post.media_url) {
+      // media_urlが既に完全なURL形式('http'で始まる)かどうかをチェック
+      if (post.media_url.startsWith('http')) {
+        // すでにURLなら、そのままstateにセット
+        setDisplayMediaUrl(post.media_url);
+      } else {
+        // URLでなければ（パス形式なら）、公開URLを取得
         const { data } = supabase.storage.from('TimeLineImages').getPublicUrl(post.media_url);
         if (data?.publicUrl) {
-            setDisplayMediaUrl(data.publicUrl);
+          setDisplayMediaUrl(data.publicUrl);
         }
+      }
     }
   }, [post.profiles?.avatar_url, post.media_url, supabase.storage]);
 
@@ -212,7 +217,7 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
   const userProfileUrl = (() => {
     const newParams = new URLSearchParams(params.toString());
     // 常に左画面をuserprofileに設定
-    newParams.set('left', 'userprofile');
+    newParams.set(side, 'userprofile');
     newParams.set('userId', post.user_id);
     // 右画面の状態は new URLSearchParams(params.toString()) によって維持される
     return `/home?${newParams.toString()}`;
@@ -271,17 +276,17 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
           ) : (
               <>
                 {post.content && (
-                  <PostContent content={post.content} />
+                  <PostContent content={post.content} side={side} />
                 )}
                 
                 {/* ★ 変更点4: 投稿画像のsrcをState変数に変更 */}
-                {post.media_url && (
+                {displayMediaUrl && (
                   <div 
                     className="rounded-xl overflow-hidden border mt-3 max-h-[500px] cursor-pointer"
                     onClick={() => setIsModalOpen(true)}
                   >
                     <Image
-                      src={post.media_url} alt="投稿画像" width={800} height={450}
+                      src={displayMediaUrl} alt="投稿画像" width={800} height={450}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -303,7 +308,7 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
                 <button className="hover:text-yellow-500 transition-colors duration-200"><FaRegBookmark size={18} /></button>
               </div>
               
-              {/* ★ 変更点: コメントセクションの描画 */}
+              {/* コメントセクションの描画 */}
               {isCommentsOpen && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <form onSubmit={handleCommentSubmit} className="flex items-center mb-4">
@@ -312,7 +317,7 @@ export default function PostCard({ post, currentUser }: PostItemProps) {
                   </form>
                     {isLoadingComments ? (<p className="text-sm text-gray-500">コメントを読み込み中...</p>) : (
                       <div className="space-y-4"> {/* 見やすさのため space-y-3 -> space-y-4 に変更 */}
-                        {/* ★ 変更点3: CommentItem コンポーネントを使って表示 */}
+                        {/* CommentItem コンポーネントを使って表示 */}
                         {commentList.map((comment) => (
                           <CommentItem key={comment.id} comment={comment} />
                         ))}

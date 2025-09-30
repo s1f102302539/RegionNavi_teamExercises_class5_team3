@@ -17,10 +17,12 @@ type Quiz = {
   correct_answer: string;
 };
 
-export default function QuizChallengePage() {
+export default function QuizChallengePage({ side }: { side: 'left' | 'right' }) {
   const supabase = createClient();
   const params = useSearchParams();
-  const prefKey = params.get('left')?.replace('quiz-', '');
+  const prefKey = params.get(side)?.replace('quiz-', '');
+  const otherSide = side === 'left' ? 'right' : 'left';
+  const otherSideView = params.get(otherSide) || (otherSide === 'right' ? 'stamprally' : 'home');
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [isCleared, setIsCleared] = useState(false);
@@ -88,7 +90,10 @@ export default function QuizChallengePage() {
         </CardHeader>
         <CardContent>
           <Button asChild>
-            <Link href="/home?left=quiz-calendar">カレンダーで記録を見る</Link>
+            {/* ★ 3. カレンダーへのリンクを動的にする (同じ側を置き換える) */}
+            <Link href={`/home?${side}=quiz-calendar&${otherSide}=${otherSideView}`}>
+              カレンダーで記録を見る
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -129,7 +134,9 @@ export default function QuizChallengePage() {
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="link" asChild className="p-0">
-          <Link href="/home?right=timeline">タイムラインでヒントを探す</Link>
+          <Link href={`/home?${side}=quiz-${prefKey}&${otherSide}=home`}>
+            タイムラインでヒントを探す
+          </Link>
         </Button>
         <Button 
           onClick={handleAnswerSubmit}

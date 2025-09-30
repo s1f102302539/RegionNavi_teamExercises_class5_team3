@@ -15,6 +15,7 @@ type User = {
 
 type UserCardProps = {
   user: User;
+  side: "left" | "right"; // ← 追加
 };
 
 export default function UserCard({ user }: UserCardProps) {

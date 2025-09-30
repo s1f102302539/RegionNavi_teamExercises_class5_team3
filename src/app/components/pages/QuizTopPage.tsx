@@ -2,9 +2,10 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-export default function QuizTopPage() {
+export default function QuizTopPage({ side }: { side: 'left' | 'right' }) {
   const params = useSearchParams();
-  const rightView = params.get('right') || 'stamprally';
+  const otherSide = side === 'left' ? 'right' : 'left';
+  const otherSideView = params.get(otherSide) || (otherSide === 'right' ? 'stamprally' : 'home');
 
   // ★ 1. 表示名とURLで使うキーの対応表を作成
   const prefectureMap: { [key: string]: string } = {
@@ -30,10 +31,9 @@ export default function QuizTopPage() {
               return (
                 <Link 
                   key={pref} 
-                  // ★ 3. URLには英語のキーを使う
-                  href={`/home?left=quiz-${prefKey}&right=${rightView}`}
+                  // ★ 3. URLを動的に生成
+                  href={`/home?${side}=quiz-${prefKey}&${otherSide}=${otherSideView}`}
                   className="px-5 py-2 bg-gray-100 rounded-full font-semibold text-gray-700 hover:bg-[#00A968] hover:text-white transition">
-                  {/* ボタンの表示は日本語のまま */}
                   {pref}
                 </Link>
               );
