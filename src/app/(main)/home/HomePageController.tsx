@@ -105,7 +105,7 @@ export default function HomePageController({ leftTimeline, rightTimeline }: Home
           )}
         </div>
 
-        <div className="col-span-1 h-screen overflow-y-auto p-4 sm:p-6 lg:p-8 border-l-2 border-yellow-200">
+        <div className="hidden lg:block col-span-1 h-screen overflow-y-auto p-4 sm:p-6 lg:p-8 border-l-2 border-yellow-200">
           {isDuplicate ? <DuplicateViewError /> : (
             rightView === 'home' ? (
               <Suspense fallback={<p className="text-center mt-8">読み込み中...</p>}>
