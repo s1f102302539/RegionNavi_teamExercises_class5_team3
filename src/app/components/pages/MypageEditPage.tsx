@@ -7,11 +7,12 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
-export default function MypageEditPage() {
+export default function MypageEditPage({ side }: { side: 'left' | 'right' }) {
   const supabase = createClient();
   const router = useRouter();
   const params = useSearchParams();
-  const rightView = params.get('right') || 'stamprally';
+  const otherSide = side === 'left' ? 'right' : 'left';
+  const otherSideView = params.get(otherSide) || (otherSide === 'right' ? 'stamprally' : 'home');
 
   // --- State管理 ---
   const [loading, setLoading] = useState(true);
@@ -142,7 +143,7 @@ export default function MypageEditPage() {
       }
 
       alert('プロフィールを保存しました！');
-      router.push(`/home?left=mypage&right=${rightView}`);
+      router.push(`/home?${side}=mypage&${otherSide}=${otherSideView}`);
 
     } catch (error) {
       console.error('プロフィールの更新に失敗しました。', error);
@@ -206,7 +207,12 @@ export default function MypageEditPage() {
             />
           </div>
           <div className="flex justify-end space-x-4">
-            <Link href={`/home?left=mypage&right=${rightView}`} className="px-6 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold hover:bg-gray-50 transition">キャンセル</Link>
+        <Link 
+          href={`/home?${side}=mypage&${otherSide}=${otherSideView}`} 
+          className="px-6 py-2 border border-gray-300 rounded-full text-gray-700 font-semibold hover:bg-gray-50 transition"
+        >
+          キャンセル
+        </Link>
             <button type="submit" className="px-6 py-2 bg-[#00A968] text-white font-semibold rounded-full hover:bg-[#008f58] transition">保存する</button>
           </div>
         </form>

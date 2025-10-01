@@ -29,10 +29,11 @@ type Profile = {
 };
 
 // ★ useParamsの代わりに、userIdをpropsで受け取る
-export default function UserProfile({ userId }: { userId: string }) {
+export default function UserProfile({ userId, side }: { userId: string, side: 'left' | 'right' }) {
   const supabase = useMemo(() => createClient(), []);
   const params = useSearchParams();
-  const rightView = params.get('right') || 'stamprally';
+  const otherSide = side === 'left' ? 'right' : 'left';
+  const otherSideView = params.get(otherSide) || (otherSide === 'right' ? 'stamprally' : 'home');
   
   // ★ targetUserIdの取得方法が変わる
   const targetUserId = userId; 
@@ -220,7 +221,10 @@ export default function UserProfile({ userId }: { userId: string }) {
             <div className="mt-4">
               {isOwnProfile ? (
                 // 自分のプロフィールの時
-                <Link href={`/home?left=mypage-edit&right=${rightView}`} className="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold hover:bg-gray-300 transition">
+                <Link 
+                  href={`/home?${side}=mypage-edit&${otherSide}=${otherSideView}`} 
+                  className="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold hover:bg-gray-300 transition"
+                >
                   <FiSettings className="mr-2" /> プロフィールを編集
                 </Link>
               ) : (
@@ -250,6 +254,7 @@ export default function UserProfile({ userId }: { userId: string }) {
                 key={post.id} 
                 post={post}
                 currentUser={currentUser}
+                side={side}
               />
             ))}
           </div>
