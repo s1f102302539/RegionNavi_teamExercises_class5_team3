@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { FaHome, FaMapMarkedAlt, FaQuestionCircle, FaSearch, FaPlusSquare, FaUser } from 'react-icons/fa';
 
@@ -21,7 +22,12 @@ export default function SideNavLeft() {
   return (
     <aside className="w-20 bg-yellow-400 p-3 flex flex-col items-center space-y-4 shadow-lg z-10">
       <Link href="/home" className="mb-4">
-        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center font-bold text-yellow-500 text-lg shadow">R</div>
+        <Image
+          src="/rerenavi.png"
+          alt="RERENAVI Logo"
+          width={48}
+          height={48}
+        />
       </Link>
       <nav className="flex flex-col items-center space-y-2">
         {navItems.map((item) => {

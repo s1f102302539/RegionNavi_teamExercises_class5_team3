@@ -85,10 +85,6 @@ export default function HomePage() {
               className="object-contain"
             />
           </div>
-          <div className="text-center font-extrabold leading-none text-black">
-            <div className="text-6xl md:text-7xl lg:text-9xl">RERE</div>
-            <div className="text-6xl md:text-7xl lg:text-9xl">NAVI</div>
-          </div>
         </div>
       </main>
     </>
