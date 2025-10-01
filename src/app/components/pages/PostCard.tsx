@@ -12,6 +12,7 @@ import CommentItem from './CommentItem';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Post, User, CommentType } from '@/types/supabase'; 
+import Linkify from 'react-linkify';
 
 export interface PostItemProps {
   post: any; // PostForCardの型
@@ -21,37 +22,47 @@ export interface PostItemProps {
 
 // ハッシュタグをリンクに変換するコンポーネント
 const PostContent = ({ content, side }: { content: string, side: 'left' | 'right'}) => {
-  // ★ 現在のURLパラメータを取得
   const currentParams = useSearchParams();
 
-  // ★ レイアウトに合わせたハッシュタグ検索URLを生成する関数
   const createHashtagSearchUrl = (tag: string) => {
-    // 現在のURLパラメータをベースに、新しいパラメータを作成
     const newParams = new URLSearchParams(currentParams.toString());
-
     newParams.set(side, 'search');
     newParams.set('tag', tag);
-    
     return `/home?${newParams.toString()}`;
   };
   
-  // 正規表現は前回修正した日本語対応版を使用
   const parts = content.split(/(#[^\s#]+)/g);
   
-    return (
+  return (
     <p className="text-gray-800 mt-2 mb-4 whitespace-pre-wrap">
       {parts.map((part, index) =>
         part.match(/#[^\s#]+/) ? (
+          // ハッシュタグ部分
           <Link
             key={index}
-            // 生成したURLをリンク先として使用
             href={createHashtagSearchUrl(part.substring(1))}
             className="text-blue-500 hover:underline"
           >
             {part}
           </Link>
         ) : (
-          part
+          // ★ 2. テキスト部分をLinkifyで囲む
+          <Linkify
+            key={index}
+            componentDecorator={(decoratedHref, decoratedText, key) => (
+              <a 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                href={decoratedHref} 
+                key={key}
+                className="text-blue-500 hover:underline"
+              >
+                {decoratedText}
+              </a>
+            )}
+          >
+            {part}
+          </Linkify>
         )
       )}
     </p>
