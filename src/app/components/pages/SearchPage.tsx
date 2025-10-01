@@ -9,7 +9,7 @@ import { Post } from '@/types/supabase';
 import { useSearchParams } from 'next/navigation'
 import type { UserResult } from '@/types/supabase';
 
-export default function SearchPage() {
+export default function SearchPage({ side }: { side: 'left' | 'right' }) {
   const supabase = createClient();
   const searchParams = useSearchParams();
 
@@ -50,24 +50,25 @@ export default function SearchPage() {
 
   // ★ ページ読み込み時に一度だけ実行されるuseEffect
   useEffect(() => {
-    const tag = searchParams.get('tag');
-    if (tag) {
-      // URLにtagパラメータがあれば、ハッシュタグ検索を実行
-      setSearchTerm(`#${tag}`);
-      handleHashtagSearch(tag);
-    }
-
     const fetchCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
     };
     fetchCurrentUser();
-  }, []); // 空の配列を渡して初回レンダリング時のみ実行
+  }, []); // 空の配列で初回のみ実行
+
+  useEffect(() => {
+    const tag = searchParams.get('tag');
+    if (tag) {
+      setSearchTerm(`#${tag}`);
+      handleHashtagSearch(tag);
+    }
+  }, [searchParams]); // URLの変更を監視
 
   // キーワード入力時の検索（ディレイ付き）
   useEffect(() => {
-    // ★ URLパラメータ由来の検索（#から始まる）の場合は、このディレイ検索をスキップ
-    if (searchTerm.startsWith('#') && searchParams.get('tag')) {
+    // 検索窓が空、またはハッシュタグ検索が実行された直後の場合は何もしない
+    if (searchTerm.trim() === '' || searchTerm.startsWith('#')) {
       return;
     }
     
@@ -141,12 +142,14 @@ export default function SearchPage() {
                   key={(item as Post).id} 
                   post={item as Post} 
                   currentUser={currentUser} 
+                  side={side}
                 />
               ) : (
                 // ★ ユーザーの検索結果をUserCardで表示するように変更
                 <UserCard 
                   key={(item as UserResult).id}
                   user={item as UserResult}
+                  side={side}
                 />
               )
             ))}

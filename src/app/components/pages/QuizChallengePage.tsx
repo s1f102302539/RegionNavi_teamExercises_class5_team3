@@ -1,9 +1,13 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
+// ★ shadcn/uiのコンポーネントをインポート
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Quiz型を定義
 type Quiz = {
@@ -11,13 +15,14 @@ type Quiz = {
   question: string;
   options: string[];
   correct_answer: string;
-  // 他に必要なプロパティがあれば追加
 };
 
-export default function QuizChallengePage() {
+export default function QuizChallengePage({ side }: { side: 'left' | 'right' }) {
   const supabase = createClient();
   const params = useSearchParams();
-  const prefKey = params.get('left')?.replace('quiz-', '');
+  const prefKey = params.get(side)?.replace('quiz-', '');
+  const otherSide = side === 'left' ? 'right' : 'left';
+  const otherSideView = params.get(otherSide) || (otherSide === 'right' ? 'stamprally' : 'home');
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [isCleared, setIsCleared] = useState(false);
@@ -30,37 +35,27 @@ export default function QuizChallengePage() {
       if (!user) return;
       setCurrentUser(user);
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0'); // getMonth()は0から始まるため+1
-    const day = String(now.getDate()).padStart(2, '0');
-    const localDateString = `${year}-${month}-${day}`;
-
-    console.log("コードが探している日付:", localDateString);
-    console.log("URLから取得したキー (prefKey):", prefKey);
-
-      
-      const { data: quizData, error } = await supabase
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const localDateString = `${year}-${month}-${day}`;
+        
+      const { data: quizData } = await supabase
         .from('quizzes')
         .select('*')
         .eq('quiz_date', localDateString)
         .eq('prefecture_name', prefKey)
         .limit(1);
-
-        console.log("取得したクイズ:", quizData);
-        console.log("error:", error);
-
-    const { data} = await supabase.from('quizzes').select('*');
-        console.log("all quizzes:", data);
-
       
       if (quizData && quizData.length > 0) {
         const currentQuiz = quizData[0];
         setQuiz(currentQuiz);
+        
         const { data: completionData } = await supabase
           .from('quiz_completions')
           .select('id')
-          .eq('quiz_id', currentQuiz.id)
+          .eq('quiz_id', currentQuiz.id) 
           .eq('user_id', user.id)
           .single();
         if (completionData) {
@@ -88,53 +83,68 @@ export default function QuizChallengePage() {
 
   if (isCleared) {
     return (
-      <div className="text-center p-8">
-        <h2 className="text-2xl font-bold text-green-500">🎉 クリア済み 🎉</h2>
-        <p>このクイズは既に正解しています。</p>
-        <Link href="/home?left=quiz-calendar" className="text-blue-500 hover:underline mt-4 inline-block">
-          カレンダーで記録を見る
-        </Link>
-      </div>
+      <Card className="text-center p-8">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-green-500">🎉 クリア済み 🎉</CardTitle>
+          <CardDescription>このクイズは既に正解しています。</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild>
+            {/* ★ 3. カレンダーへのリンクを動的にする (同じ側を置き換える) */}
+            <Link href={`/home?${side}=quiz-calendar&${otherSide}=${otherSideView}`}>
+              カレンダーで記録を見る
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!quiz) {
-    return <div className="text-center p-8">今日のクイズはまだないようです。</div>;
+    return (
+      <Card className="text-center p-8">
+        <CardHeader>
+          <CardTitle>今日のクイズはありません</CardTitle>
+          <CardDescription>また明日挑戦してください！</CardDescription>
+        </CardHeader>
+      </Card>
+    );
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow">
-      <h1 className="text-xl font-bold mb-4">{prefKey}のデイリークイズ</h1>
-      <p className="text-lg mb-6">{quiz.question}</p>
-      
-      <div className="space-y-3 mb-6">
-        {(quiz.options || []).map((option) => (
-          <button
-            key={option}
-            onClick={() => setSelectedAnswer(option)}
-            className={`w-full text-left p-3 rounded-lg border-2 transition ${
-              selectedAnswer === option
-                ? 'bg-green-100 border-green-500'
-                : 'bg-gray-50 border-gray-200 hover:border-green-300'
-            }`}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between">
-        <Link href="/home?right=timeline" className="text-sm text-blue-500 hover:underline">
-          タイムラインでヒントを探す
-        </Link>
-        <button 
+    <Card>
+      <CardHeader>
+        <CardTitle>{prefKey ? `${prefKey}のデイリークイズ` : 'デイリークイズ'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-lg mb-6">{quiz.question}</p>
+        
+        <div className="space-y-3 mb-6">
+          {(quiz.options || []).map((option) => (
+            <Button
+              key={option}
+              variant={selectedAnswer === option ? 'default' : 'outline'}
+              className="w-full justify-start p-6 text-base"
+              onClick={() => setSelectedAnswer(option)}
+            >
+              {option}
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button variant="link" asChild className="p-0">
+          <Link href={`/home?${side}=quiz-${prefKey}&${otherSide}=home`}>
+            タイムラインでヒントを探す
+          </Link>
+        </Button>
+        <Button 
           onClick={handleAnswerSubmit}
           disabled={!selectedAnswer}
-          className="px-6 py-2 bg-[#00A968] text-white font-semibold rounded-full hover:bg-[#008f58] transition disabled:bg-gray-300"
         >
           回答する
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
