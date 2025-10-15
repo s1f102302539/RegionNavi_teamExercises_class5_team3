@@ -15,8 +15,28 @@ const navItems = [
 
 export default function SideNavRight() {
   const params = useSearchParams();
-  const currentLeft = params.get('left') || 'home';
   const currentRight = params.get('right') || 'stamprally';
+
+  // ★ 修正: より安全で正確なURL生成関数 (右画面用)
+  const createNavUrl = (itemKey: string) => {
+    // 現在のURLパラメータをすべてコピー
+    const newParams = new URLSearchParams(params.toString());
+    
+    // クリックされる前の右画面の状態を保持
+    const previousRight = params.get('right');
+
+    // 右画面の表示内容を、クリックされたアイコンのものに更新
+    newParams.set('right', itemKey);
+
+    // もし、「クリックされる前の右画面が」他人のプロフィールページだった場合、
+    // 不要になったuserIdをURLから削除します。
+    // これにより、左画面が表示しているプロフィール用のuserIdは維持されます。
+    if (previousRight === 'userprofile') {
+      newParams.delete('userId');
+    }
+
+    return `/home?${newParams.toString()}`;
+  };
 
   return (
     <aside className="w-20 bg-yellow-400 p-3 flex flex-col items-center space-y-4 shadow-lg z-10 h-full">
@@ -27,8 +47,8 @@ export default function SideNavRight() {
           return (
             <Link
               key={item.key}
-              // 左画面の状態を維持したまま、右画面のURLだけを書き換える
-              href={`/home?left=${currentLeft}&right=${item.key}`}
+              // ★ 修正: 生成したURLをリンク先として使用
+              href={createNavUrl(item.key)}
               className="group relative p-3 rounded-xl transition-colors duration-200 hover:bg-yellow-500/50"
             >
               <item.icon size={24} className={isActive ? 'text-black' : 'text-gray-800'} />
@@ -40,3 +60,5 @@ export default function SideNavRight() {
     </aside>
   );
 }
+
+
