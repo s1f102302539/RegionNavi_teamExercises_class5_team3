@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, FormEvent } from 'react';
-import { FaHeart, FaComment, FaRegBookmark, FaRegHeart } from 'react-icons/fa';
+import { FaHeart, FaComment, FaRegBookmark, FaRegHeart, FaBookmark } from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { FiSend } from 'react-icons/fi';
@@ -93,6 +93,7 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
   const [commentCount, setCommentCount] = useState<number>(post.comments);
 
   const rightView = params.get('right') || 'stamprally';
+  const [isBookmarked, setIsBookmarked] = useState(post.is_bookmarked_by_user || false);
 
   console.log('渡されたpostデータ:', post);
 
@@ -185,6 +186,27 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
       }
     }
   };
+
+  const handleBookmarkToggle = async () => {
+    if (!currentUser) return alert('ブックマークするにはログインが必要です。');
+
+    const currentlyBookmarked = !isBookmarked;
+    setIsBookmarked(currentlyBookmarked);
+
+    if(currentlyBookmarked) {
+      const { error } = await supabase.from('bookmarks').insert({ user_id: currentUser.id, post_id: post.id})
+      if (error) {
+        setIsBookmarked(false);
+        console.error('Error bookmarking post:', error.message);
+      }
+    }else{
+      const { error } = await supabase.from('bookmarks').delete().match({ user_id: currentUser.id, post_id: post.id });
+      if (error) {
+        setIsBookmarked(true); // 失敗したら元に戻す
+        console.error('Error unbookmarking post:', error.message);      
+    }
+  }
+};
 
   // コメント
   const toggleComments = async () => {
@@ -316,7 +338,13 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
                   <FaComment /> 
                   <span className="text-sm font-semibold">{commentCount}</span>
                 </button>
-                <button className="hover:text-yellow-500 transition-colors duration-200"><FaRegBookmark size={18} /></button>
+                <button onClick={handleBookmarkToggle} className="hover:text-yellow-500 transition-colors duration-200">
+                  {isBookmarked ? (
+                    <FaBookmark className="text-yellow-500" size={18} />
+                  ) : (
+                    <FaRegBookmark size={18} />
+                  )}
+                </button>
               </div>
               
               {/* コメントセクションの描画 */}

@@ -16,6 +16,7 @@ import MypageEditPage from '@/app/components/pages/MypageEditPage';
 import PrefectureQuizPage from '@/app/components/pages/QuizChallengePage';
 import QuizCalendarPage from '@/app/components/pages/QuizCalendarPage';
 import MyPage from '@/app/components/pages/MyPage';
+import BookmarksPage from '@/app/components/pages/BookmarksPage';
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
   stamprally: StampRallyPage,
@@ -24,6 +25,7 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
   post: CreatePostForm,
   'mypage-edit': MypageEditPage,
   'quiz-calendar': QuizCalendarPage,
+  'bookmarks': BookmarksPage,
 };
 
 const getComponent = (
