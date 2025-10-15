@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { FaHome, FaMapMarkedAlt, FaQuestionCircle, FaSearch, FaPlusSquare, FaUser } from 'react-icons/fa';
+import { FaHome, FaMapMarkedAlt, FaQuestionCircle, FaSearch, FaPlusSquare, FaUser, FaBookmark } from 'react-icons/fa';
 
 const navItems = [
   { key: 'home', icon: FaHome, label: 'タイムライン' },
@@ -11,6 +11,7 @@ const navItems = [
   { key: 'quiz', icon: FaQuestionCircle, label: 'クイズ' },
   { key: 'search', icon: FaSearch, label: '検索' },
   { key: 'post', icon: FaPlusSquare, label: '投稿'},
+    { key: 'bookmarks', icon: FaBookmark, label: 'ブックマーク' },
   { key: 'mypage', icon: FaUser, label: 'マイページ' },
 ];
 
