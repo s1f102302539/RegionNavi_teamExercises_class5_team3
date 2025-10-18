@@ -4,20 +4,12 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import type { UserResult } from '@/types/supabase';
 
-// このコンポーネントが受け取るPropsの型を定義
-type User = {
-  id: string;
-  username: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  status: string | null;
-};
-
-type UserCardProps = {
-  user: User;
-  side: "left" | "right"; // ← 追加
-};
+interface UserCardProps {
+  user: UserResult; // UserResultがstatusプロパティも含むようにする
+  side: 'left' | 'right';
+}
 
 export default function UserCard({ user }: UserCardProps) {
   const supabase = createClient();
@@ -46,19 +38,19 @@ export default function UserCard({ user }: UserCardProps) {
         className="rounded-full bg-gray-200 object-cover"
       />
       <div className="ml-4">
-      <div className="flex items-center space-x-2">
-          
-          {/* 条件に応じてバッジを表示 */}
+        <div className="flex items-center space-x-2">
+          {/* featureブランチから「公式バッジ」の機能を採用 */}
           {user.status === 'Official' && (
-            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full mx-1 my-1">
+            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
               公式
             </span>
           )}
-          <p className="font-bold">{user.username}</p> 
+          {/* mainブランチから「フォールバック表示」の機能を採用 */}
+          <p className="font-bold text-gray-800">{user.username || '匿名ユーザー'}</p>
         </div>
         
-
-        <p className="text-sm text-gray-600 line-clamp-1">{user.bio}</p>
+        {/* mainブランチから「フォールバック表示」と「line-clamp-2」を採用 */}
+        <p className="text-sm text-gray-600 line-clamp-2">{user.bio || '自己紹介がありません'}</p>
       </div>
     </Link>
   );
