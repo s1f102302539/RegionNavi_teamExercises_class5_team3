@@ -17,6 +17,7 @@ import PrefectureQuizPage from '@/app/components/pages/QuizChallengePage';
 import QuizCalendarPage from '@/app/components/pages/QuizCalendarPage';
 import MyPage from '@/app/components/pages/MyPage';
 import BookmarksPage from '@/app/components/pages/BookmarksPage';
+import TimelineTabs from '@/app/components/pages/TimelineTabs';
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
   stamprally: StampRallyPage,
@@ -33,10 +34,16 @@ const getComponent = (
   timelineComponent: React.ReactNode,
   currentUser: User | null,
   targetUserId: string | null,
-  side: 'left' | 'right' // sideを受け取る
+  side: 'left' | 'right'
 ): React.ReactNode => {
+  // 'home' (タイムライン) が表示される場合に、タブUIも一緒に出力する
   if (!viewKey || viewKey === 'home') {
-    return timelineComponent;
+    return (
+      <>
+        <TimelineTabs side={side} />
+        {timelineComponent}
+      </>
+    );
   }
   if (viewKey === 'mypage') {
     if (currentUser) return <MyPage userId={currentUser.id} side={side} />;
