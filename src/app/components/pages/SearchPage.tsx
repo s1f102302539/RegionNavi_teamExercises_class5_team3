@@ -103,7 +103,7 @@ export default function SearchPage({ side }: { side: 'left' | 'right' }) {
     } else {
       const response = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, bio')
+        .select('id, username, avatar_url, bio, status')
         .ilike('username', `%${term}%`);
       error = response.error;
       data = response.data;

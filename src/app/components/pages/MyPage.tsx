@@ -18,6 +18,8 @@ type PostForCard = PostWithDetails & {
   likes: number; // 配列(any[])から数値(number)に変更
   comments: number; // 配列(any[])から数値(number)に変更
   is_liked_by_user: boolean; // is_liked_by_userプロパティを追加
+  prefecture: string | null;
+  is_bookmarked_by_user: boolean;
 };
 
 // (型定義は変更なし)
@@ -26,6 +28,7 @@ type Profile = {
   username: string;
   avatar_url: string | null;
   bio: string | null;
+  status: string | null;
 };
 
 // ★ useParamsの代わりに、userIdをpropsで受け取る

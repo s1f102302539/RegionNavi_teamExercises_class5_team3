@@ -284,10 +284,17 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
           <div className="flex items-center justify-between">
             <div>
               <Link href={userProfileUrl}>
-               <p className={`font-bold ${isAuthor ? 'text-green-600' : 'text-gray-900'} hover:underline`}>
+              
+              {post.profiles?.status === 'Official' && (
+                    <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full mx-1 my-1">
+                      公式
+                    </span>
+                  )}
+               <span className={`font-bold ${isAuthor ? 'text-green-600' : 'text-gray-900'} hover:underline`}>
                   {post.profiles?.username || '匿名ユーザー'}
-                </p>
+                </span>
               </Link>
+
               <p className="text-sm text-gray-500">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ja })}
               </p>

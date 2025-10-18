@@ -13,6 +13,7 @@ type PostForCard = PostWithDetails & {
   profiles: {
     username: string | null;
     avatar_url: string | null;
+    status: string | null;
   } | null;
   likes: number;
   comments: number;

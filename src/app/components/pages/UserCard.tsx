@@ -11,6 +11,7 @@ type User = {
   username: string | null;
   avatar_url: string | null;
   bio: string | null;
+  status: string | null;
 };
 
 type UserCardProps = {
@@ -45,7 +46,18 @@ export default function UserCard({ user }: UserCardProps) {
         className="rounded-full bg-gray-200 object-cover"
       />
       <div className="ml-4">
-        <p className="font-bold">{user.username}</p>
+      <div className="flex items-center space-x-2">
+          
+          {/* 条件に応じてバッジを表示 */}
+          {user.status === 'Official' && (
+            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full mx-1 my-1">
+              公式
+            </span>
+          )}
+          <p className="font-bold">{user.username}</p> 
+        </div>
+        
+
         <p className="text-sm text-gray-600 line-clamp-1">{user.bio}</p>
       </div>
     </Link>
