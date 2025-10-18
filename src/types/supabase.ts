@@ -4,6 +4,7 @@
 export type Profile = {
   username: string | null;
   avatar_url: string | null;
+  status: string | null;
 };
 
 // コメントの型
@@ -15,6 +16,7 @@ export type CommentType = {
   profiles: {
     username: string | null;
     avatar_url: string | null;
+    status: string | null;
   } | null;
 };
 
@@ -32,6 +34,8 @@ export type Post = {
   likes: number; // ★ 変更点: いいねの総数 (RPCから取得)
   comments: number; // ★ 変更点: コメントの総数 (RPCから取得)
   is_liked_by_user: boolean; // ★ 変更点: ログインユーザーがいいね済みか (RPCから取得)
+  prefecture: string | null; // ★ 追加点: 都道府県情報
+  is_bookmarked_by_user: boolean;
 };
 
 // ユーザーの型
@@ -45,6 +49,7 @@ export type UserResult = {
   username: string | null;
   avatar_url: string | null;
   bio: string | null;
+  status: string | null;
 };
 
 // stampsテーブルの型定義 (緯度・経度を追加)
@@ -69,6 +74,8 @@ export type PostWithDetails = {
   like_count: number;
   comment_count: number;
   is_liked_by_user: boolean;
+  prefecture: string | null;
+  is_bookmarked_by_user: boolean;
 };
 
 // PostCardコンポーネントが props として必要とする post オブジェクトの型
@@ -85,6 +92,8 @@ export type PostForCard = {
   likes: number; // PostCardが期待するプロパティ名
   comments: number; // PostCardが期待するプロパティ名
   is_liked_by_user: boolean;
+  prefecture: string | null;
+  is_bookmarked_by_user: boolean;
 };
 
 // PostCardコンポーネントのProps全体の型

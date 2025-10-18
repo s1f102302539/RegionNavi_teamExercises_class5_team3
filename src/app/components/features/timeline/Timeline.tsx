@@ -17,6 +17,8 @@ type PostForCard = PostWithDetails & {
   likes: number;
   comments: number;
   is_liked_by_user: boolean;
+  prefecture: string | null;
+  is_bookmarked_by_user: boolean;
 };
 
 export default async function Timeline({ userId, title = "タイムライン", side }: TimelineProps) {
