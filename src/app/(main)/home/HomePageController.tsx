@@ -2,8 +2,6 @@
 
 import { useState, useEffect, ReactNode, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import SideNavLeft from '@/app/components/layouts/SideNavLeft';
-import SideNavRight from '@/app/components/layouts/SideNavRight';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -100,7 +98,6 @@ export default function HomePageController({ leftTimeline, rightTimeline }: Home
 
   return (
     <div className="flex h-screen w-full bg-yellow-50">
-      <SideNavLeft />
       
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 lg:gap-5">
         
@@ -127,9 +124,7 @@ export default function HomePageController({ leftTimeline, rightTimeline }: Home
         </div>
       </div>
       
-      <div className="hidden lg:block">
-        <SideNavRight />
-      </div>
+     
     </div>
   );
 }
