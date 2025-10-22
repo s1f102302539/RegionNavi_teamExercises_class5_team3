@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, FormEvent } from 'react';
-import { FaHeart, FaComment, FaRegBookmark, FaRegHeart, FaBookmark } from 'react-icons/fa';
+import { FaHeart, FaComment, FaRegBookmark, FaRegHeart, FaBookmark, FaMapMarkerAlt } from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { FiSend } from 'react-icons/fi';
@@ -13,12 +13,17 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Post, User, CommentType } from '@/types/supabase'; 
 import Linkify from 'react-linkify';
+import { regions } from '@/types/prefectureData';
 
 export interface PostItemProps {
   post: any; // PostForCardの型
   currentUser: User | null;
   side: 'left' | 'right'; // 追加: sideプロパティ
 }
+
+const prefectureMap = new Map(
+  regions.flatMap(region => region.prefectures).map(pref => [pref.value, pref.name])
+);
 
 // ハッシュタグをリンクに変換するコンポーネント
 const PostContent = ({ content, side }: { content: string, side: 'left' | 'right'}) => {
@@ -70,6 +75,7 @@ const PostContent = ({ content, side }: { content: string, side: 'left' | 'right
 };
 
 export default function PostCard({ post, currentUser, side }: PostItemProps) {
+  console.log('PostCardが受け取ったpost:', post);
   const router = useRouter();
   const supabase = createClient();
   const params = useSearchParams();
@@ -95,7 +101,7 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
   const rightView = params.get('right') || 'stamprally';
   const [isBookmarked, setIsBookmarked] = useState(post.is_bookmarked_by_user || false);
 
-  console.log('渡されたpostデータ:', post);
+  const [editedPrefecture, setEditedPrefecture] = useState(post.prefecture || '');
 
   // コンポーネント読み込み時にパスから完全なURLを生成
   useEffect(() => {
@@ -151,7 +157,10 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
 
   const { error } = await supabase
     .from('posts')
-    .update({ content: editedContent })
+    .update({
+      content: editedContent,
+      prefecture: editedPrefecture || null
+    })
     .eq('id', post.id);
 
     if (error) {
@@ -217,7 +226,7 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
     setIsLoadingComments(true);
     const { data, error } = await supabase
       .from('comments')
-      .select('*, profiles(username, avatar_url)')
+      .select('*, profiles(username, avatar_url, status)')
       .eq('post_id', post.id)
       .order('created_at', { ascending: true });
 
@@ -227,7 +236,7 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
   }
 };
 
-  // ★ 変更点: コメント投稿の処理
+  // コメント投稿の処理
   const handleCommentSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!currentUser || newComment.trim() === '') return;
@@ -235,7 +244,7 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
     const { data, error } = await supabase
       .from('comments')
       .insert({ content: newComment.trim(), user_id: currentUser.id, post_id: post.id })
-      .select('*, profiles(username, avatar_url)')
+      .select('*, profiles(username, avatar_url, status)')
       .single();
 
     if (error) {
@@ -275,10 +284,17 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
           <div className="flex items-center justify-between">
             <div>
               <Link href={userProfileUrl}>
-               <p className={`font-bold ${isAuthor ? 'text-green-600' : 'text-gray-900'} hover:underline`}>
+              
+              {post.profiles?.status === 'Official' && (
+                    <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full mx-1 my-1">
+                      公式
+                    </span>
+                  )}
+               <span className={`font-bold ${isAuthor ? 'text-green-600' : 'text-gray-900'} hover:underline`}>
                   {post.profiles?.username || '匿名ユーザー'}
-                </p>
+                </span>
               </Link>
+
               <p className="text-sm text-gray-500">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ja })}
               </p>
@@ -293,26 +309,54 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
             )}
           </div>
 
-          {isEditing ? (
-            <div className="mt-2">
-              <textarea
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="w-full p-2 border rounded-lg bg-gray-100"
-                rows={3}
-              />
-              <div className="flex justify-end space-x-2 mt-2">
-                <button onClick={() => setIsEditing(false)} className="text-sm py-1 px-3 rounded-full bg-gray-200 hover:bg-gray-300">キャンセル</button>
-                <button onClick={handleUpdate} className="text-sm py-1 px-3 rounded-full bg-[#00A968] text-white hover:bg-[#008f58]">更新する</button>
-              </div>
-            </div>
-          ) : (
-              <>
+{isEditing ? (
+              <div className="mt-2">
+                <textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="w-full p-2 border rounded-lg bg-gray-100"
+                  rows={3}
+                />
+                {/* ★ 6. 編集時にドロップダウンを表示 */}
+                <div className="mt-2">
+                  <select
+                    name="prefecture"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A968] focus:border-transparent"
+                    value={editedPrefecture}
+                    onChange={(e) => setEditedPrefecture(e.target.value)}
+                  >
+                  <option value="">都道府県を設定しない</option>
+                                {regions.map((region) => (
+                                  <optgroup key={region.name} label={region.name}>
+                                    {region.prefectures.map((pref) => (
+                                      <option key={pref.value} value={pref.value}>
+                                        {pref.name}
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex justify-end space-x-2 mt-2">
+                              <button onClick={() => setIsEditing(false)} className="text-sm py-1 px-3 rounded-full bg-gray-200 hover:bg-gray-300">キャンセル</button>
+                              <button onClick={handleUpdate} className="text-sm py-1 px-3 rounded-full bg-[#00A968] text-white hover:bg-[#008f58]">更新する</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
                 {post.content && (
                   <PostContent content={post.content} side={side} />
                 )}
                 
-                {/* ★ 変更点4: 投稿画像のsrcをState変数に変更 */}
+                {/* ★ 7. 都道府県を表示 */}
+                {post.prefecture && (
+                    <div className="flex items-center space-x-1 text-sm text-gray-500 mt-2">
+                        <FaMapMarkerAlt />
+                        <span>{prefectureMap.get(post.prefecture) || post.prefecture}</span>
+                    </div>
+                )}
+                
+                {/* 投稿画像のsrcをState変数に変更 */}
                 {displayMediaUrl && (
                   <div 
                     className="rounded-xl overflow-hidden border mt-3 max-h-[500px] cursor-pointer"

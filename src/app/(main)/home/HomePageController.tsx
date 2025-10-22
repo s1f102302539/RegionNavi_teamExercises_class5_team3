@@ -2,8 +2,6 @@
 
 import { useState, useEffect, ReactNode, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import SideNavLeft from '@/app/components/layouts/SideNavLeft';
-import SideNavRight from '@/app/components/layouts/SideNavRight';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -17,6 +15,7 @@ import PrefectureQuizPage from '@/app/components/pages/QuizChallengePage';
 import QuizCalendarPage from '@/app/components/pages/QuizCalendarPage';
 import MyPage from '@/app/components/pages/MyPage';
 import BookmarksPage from '@/app/components/pages/BookmarksPage';
+import TimelineTabs from '@/app/components/pages/TimelineTabs';
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
   stamprally: StampRallyPage,
@@ -33,10 +32,16 @@ const getComponent = (
   timelineComponent: React.ReactNode,
   currentUser: User | null,
   targetUserId: string | null,
-  side: 'left' | 'right' // sideを受け取る
+  side: 'left' | 'right'
 ): React.ReactNode => {
+  // 'home' (タイムライン) が表示される場合に、タブUIも一緒に出力する
   if (!viewKey || viewKey === 'home') {
-    return timelineComponent;
+    return (
+      <>
+        <TimelineTabs side={side} />
+        {timelineComponent}
+      </>
+    );
   }
   if (viewKey === 'mypage') {
     if (currentUser) return <MyPage userId={currentUser.id} side={side} />;
@@ -93,7 +98,6 @@ export default function HomePageController({ leftTimeline, rightTimeline }: Home
 
   return (
     <div className="flex h-screen w-full bg-yellow-50">
-      <SideNavLeft />
       
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 lg:gap-5">
         
@@ -120,9 +124,7 @@ export default function HomePageController({ leftTimeline, rightTimeline }: Home
         </div>
       </div>
       
-      <div className="hidden lg:block">
-        <SideNavRight />
-      </div>
+     
     </div>
   );
 }

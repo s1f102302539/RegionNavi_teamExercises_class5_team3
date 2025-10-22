@@ -7,9 +7,9 @@ import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { UserResult } from '@/types/supabase';
 
-// UserCardが受け取るProps(プロパティ)の型を定義
+
 interface UserCardProps {
-  user: UserResult;
+  user: UserResult; // UserResultがstatusプロパティも含むようにする
   side: 'left' | 'right';
 }
 
@@ -52,7 +52,19 @@ export default function UserCard({ user, side }: UserCardProps) {
         className="rounded-full bg-gray-200 object-cover"
       />
       <div className="ml-4">
-        <p className="font-bold text-gray-800">{user.username || '匿名ユーザー'}</p>
+        <div className="flex items-center space-x-2">
+          {/* featureブランチから「公式バッジ」の機能を採用 */}
+          {user.status === 'Official' && (
+            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+              公式
+            </span>
+          )}
+          {/* mainブランチから「フォールバック表示」の機能を採用 */}
+          <p className="font-bold text-gray-800">{user.username || '匿名ユーザー'}</p>
+        </div>
+        
+        {/* mainブランチから「フォールバック表示」と「line-clamp-2」を採用 */}
+
         <p className="text-sm text-gray-600 line-clamp-2">{user.bio || '自己紹介がありません'}</p>
       </div>
     </Link>

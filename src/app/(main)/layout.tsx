@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
-import SideNav from "@/app/components/layouts/SideNav";
+import SideNavLeft from "@/app/components/layouts/SideNavLeft";
+import SideNavRight from "@/app/components/layouts/SideNavRight";
+
+export const dynamic = 'force-dynamic';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,8 +29,16 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      {children}
-    </>
+    <div className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+      <div className="min-h-screen flex items-stretch">
+        <SideNavLeft />
+        <main className="flex-1">
+          {children}
+        </main>
+        <div className="hidden lg:flex h-screen items-stretch">
+          <SideNavRight />
+        </div>
+      </div>
+    </div>
   );
 }
