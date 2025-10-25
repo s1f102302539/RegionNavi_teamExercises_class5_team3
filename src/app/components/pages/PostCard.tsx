@@ -75,7 +75,6 @@ const PostContent = ({ content, side }: { content: string, side: 'left' | 'right
 };
 
 export default function PostCard({ post, currentUser, side }: PostItemProps) {
-  console.log('PostCardが受け取ったpost:', post);
   const router = useRouter();
   const supabase = createClient();
   const params = useSearchParams();

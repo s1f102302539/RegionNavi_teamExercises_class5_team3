@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { FaHome, FaMapMarkedAlt, FaQuestionCircle, FaSearch, FaPlusSquare, FaUser } from 'react-icons/fa';
+import { FaHome, FaMapMarkedAlt, FaQuestionCircle, FaSearch, FaPlusSquare, FaUser, FaCalendarCheck } from 'react-icons/fa';
 
 const navItems = [
   { key: 'stamprally', icon: FaMapMarkedAlt, label: 'スタンプラリー' },
@@ -11,6 +11,7 @@ const navItems = [
   { key: 'search', icon: FaSearch, label: '検索' },
   { key: 'post', icon: FaPlusSquare, label: '投稿'},
   { key: 'mypage', icon: FaUser, label: 'マイページ' },
+  { key: 'event', icon: FaCalendarCheck, label: 'イベント' },
 ];
 
 export default function SideNavRight() {
