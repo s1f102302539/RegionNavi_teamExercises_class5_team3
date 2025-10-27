@@ -16,6 +16,7 @@ import QuizCalendarPage from '@/app/components/pages/QuizCalendarPage';
 import MyPage from '@/app/components/pages/MyPage';
 import BookmarksPage from '@/app/components/pages/BookmarksPage';
 import TimelineTabs from '@/app/components/pages/TimelineTabs';
+import QuizEventComponent from '@/app/components/pages/QuizEvent';
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
   stamprally: StampRallyPage,
@@ -25,6 +26,7 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
   'mypage-edit': MypageEditPage,
   'quiz-calendar': QuizCalendarPage,
   'bookmarks': BookmarksPage,
+  'event': QuizEventComponent,
 };
 
 const getComponent = (
