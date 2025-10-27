@@ -11,7 +11,8 @@ import {
   FaStar, 
   FaClock,          // タイム用に「時計」アイコンを追加
   FaExclamationTriangle, // ペナルティ用に「警告」アイコンを追加
-  FaCrown
+  FaCrown,
+  FaInfoCircle
 } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -146,7 +147,9 @@ export default function QuizEventComponent() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [nickname, setNickname] = useState('');
   // 3画面の状態を管理
-  const [quizState, setQuizState] = useState<'nickname_input' | 'loading' | 'in_progress' | 'finished'>('nickname_input');
+  const [quizState, setQuizState] = useState<'nickname_input' | 'countdown' | 'loading' | 'in_progress' | 'finished'>('nickname_input');
+
+  const [countdown, setCountdown] = useState(3);
 
   // タイム計測用
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -202,13 +205,15 @@ export default function QuizEventComponent() {
   };
   
   // ニックネーム送信
-  const handleNicknameSubmit = (e: React.FormEvent) => {
+const handleNicknameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (nickname.trim() === '') {
       alert('ニックネームを入力してください');
       return;
     }
-    fetchQuizzes();
+    // fetchQuizzes() を直接呼ばず、カウントダウンを開始する
+    setCountdown(3); // カウントダウンをリセット
+    setQuizState('countdown'); 
   };
 
   // 2. 回答処理 (正解するまで進めないロジック)
@@ -312,12 +317,30 @@ export default function QuizEventComponent() {
     });
   };
 
+  useEffect(() => {
+    if (quizState === 'countdown') {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) { // 1 の状態から 0 になる時
+            clearInterval(timer);
+            fetchQuizzes(); // カウントダウン終了後にクイズ取得開始
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000); // 1秒ごとに実行
+
+      return () => clearInterval(timer); // コンポーネントがアンマウントされたらタイマー解除
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizState]); // quizState が 'countdown' になった時だけ実行
+
   // --- 4. 表示の切り替え (UIとロジックを統合) ---
 
-  return (
+return (
     <div className="relative w-full h-full flex items-center justify-center min-h-screen bg-gray-100 p-4">
       
-      {/* コンフェッティ表示エリア */}
+      {/* (コンフェッティ表示エリアは変更なし) */}
       <AnimatePresence>
         {showConfetti && <Confetti />}
       </AnimatePresence>
@@ -326,7 +349,7 @@ export default function QuizEventComponent() {
         <div className="w-full max-w-2xl">
           <AnimatePresence mode="wait">
 
-            {/* --- 画面1: ニックネーム入力 --- */}
+            {/* --- 画面1: ニックネーム入力 (ルール説明を追加) --- */}
             {quizState === 'nickname_input' && (
               <motion.div
                 key="nickname"
@@ -336,17 +359,31 @@ export default function QuizEventComponent() {
                 exit="exit"
               >
                 <Card className="relative overflow-hidden bg-white/90 backdrop-blur-sm shadow-2xl border-2 border-purple-200">
-                  {/* ヘッダーグラデーション */}
                   <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500" />
                   <CardHeader>
                     <CardTitle className="text-3xl font-bold text-center text-gray-800 mb-2">
-                      イベントへようこそ！
+                      赤羽クイズタイムアタック！
                     </CardTitle>
-                    <CardDescription className="text-center text-gray-600 mb-6">
-                      ニックネームを入力してクイズを開始してください。
+                    <CardDescription className="text-center text-gray-600">
+                      ニックネームを入力して挑戦しよう
                     </CardDescription>
                   </CardHeader>
+
+                  {/* ★ 2. ルール説明を追加 */}
                   <CardContent>
+                    <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <h4 className="flex items-center justify-center gap-2 text-lg font-semibold text-center mb-3 text-gray-700">
+                        <FaInfoCircle />
+                        ルール説明
+                      </h4>
+                      <ul className="space-y-2 text-gray-600 list-disc list-inside">
+                        <li>問題は<span className="font-bold">全10問</span>です。</li>
+                        <li>すべて<span className="font-bold">「赤羽」</span>に関する問題です。</li>
+                        <li>答えがわからない時はタイムライン等で調べてOK！</li>
+                        <li>誤答は<span className="font-bold text-red-600">+5秒</span>のペナルティです。</li>
+                      </ul>
+                    </div>
+                  
                     <form onSubmit={handleNicknameSubmit} className="space-y-4">
                       <input
                         type="text"
@@ -363,11 +400,42 @@ export default function QuizEventComponent() {
                           type="submit" 
                           className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 text-lg shadow-lg"
                         >
-                          クイズスタート ✨
+                          挑戦する ✨
                         </Button>
                       </motion.div>
                     </form>
                   </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* ★ 4. カウントダウン画面を追加 */}
+            {quizState === 'countdown' && (
+              <motion.div
+                key="countdown"
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <Card className="text-center p-12 bg-white/80 backdrop-blur-sm shadow-2xl">
+                  <CardHeader>
+                    <CardDescription className="text-3xl font-bold text-gray-700 mb-6">
+                      まもなく開始します...
+                    </CardDescription>
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={countdown} // keyをcountdownの値にすることで数字が切り替わる
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        transition={{ type: 'spring', duration: 0.4 }}
+                        className="text-9xl font-extrabold text-purple-600"
+                      >
+                        {countdown}
+                      </motion.div>
+                    </AnimatePresence>
+                  </CardHeader>
                 </Card>
               </motion.div>
             )}
