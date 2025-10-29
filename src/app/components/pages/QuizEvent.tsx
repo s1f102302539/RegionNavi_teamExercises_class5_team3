@@ -12,17 +12,20 @@ import {
   FaClock,          // タイム用に「時計」アイコンを追加
   FaExclamationTriangle, // ペナルティ用に「警告」アイコンを追加
   FaCrown,
-  FaInfoCircle
+  FaInfoCircle,
+  FaBookOpen
 } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Quiz型を定義
 type Quiz = {
-  id: string;
-  question: string;
-  options: string[];
-  answer: string; // Supabaseの 'answer' カラムが 'answer' の場合
+  id: string;
+  question: string;
+  options: string[];
+  answer: string;
+  explanation: string; // ★ 解説カラム
+  category: string; // ★ カテゴリカラム
 };
 
 // --- アニメーション用コンポーネント (ご提示のコードから流用) ---
@@ -131,14 +134,27 @@ const optionVariants = {
   }
 };
 
-// ★ スコアボードのデータ型を定義
-type ScoreboardEntry = {
-  nickname: string;
-  created_at: string;
-  score: number; // タイム(ms)がここに入る
+// ★★★ ここからロジックを統合 ★★★
+
+const shuffleArray = (array: any[]) => {
+  let currentIndex = array.length, randomIndex;
+  // While there remain elements to shuffle.
+  while (currentIndex !== 0) {
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+  return array;
 };
 
-// ★★★ ここからロジックを統合 ★★★
+type ScoreboardEntry = {
+  nickname: string;
+  created_at: string;
+  score: number;
+};
 
 export default function QuizEventComponent() {
   
@@ -167,6 +183,9 @@ export default function QuizEventComponent() {
   const [scoreboardData, setScoreboardData] = useState<ScoreboardEntry[]>([]);
   const [isScoreboardLoading, setIsScoreboardLoading] = useState(true);
 
+  const [selectedQuizCategory, setSelectedQuizCategory] = useState<string>('akabane');
+  const [showExplanation, setShowExplanation] = useState(false);
+
   const supabase = createClient();
 
   // --- 関数定義 (クイズロジック) ---
@@ -174,17 +193,25 @@ export default function QuizEventComponent() {
   // 1. クイズ取得
   const fetchQuizzes = async () => {
     setQuizState('loading');
+
     const { data, error } = await supabase
-        .from('event_quiz')
-        .select('*')
-        .limit(10); // 10問取得
+        .from('event_quiz')
+        .select('id, question, options, answer, explanation, category') // ★ 必要なカラムを明示
+        .eq('category', selectedQuizCategory) // ★ 選択されたカテゴリで絞り込み
+        .limit(10);
 
     if (error) {
       console.error('クイズの取得に失敗:', error);
       setQuizState('nickname_input'); // エラー時は入力画面に戻す
     } else if (data && data.length > 0) {
       console.log('取得したクイズデータ:', data);
-      setQuizzes(data);
+
+      const shuffledQuizzes = data.map(quiz => ({
+        ...quiz,
+        options: shuffleArray([...quiz.options]) // 元配列を壊さないようコピー
+      }));
+
+      setQuizzes(shuffledQuizzes);
       setQuizState('in_progress');
       
       // クイズ挑戦ごとにStateをリセット
@@ -193,6 +220,7 @@ export default function QuizEventComponent() {
       setFinalClearTimeMs(null);
       setDisabledOptions([]);
       setFeedback('');
+      setShowExplanation(false);
       
       // タイマースタート
       setStartTime(Date.now()); 
@@ -271,6 +299,7 @@ const handleNicknameSubmit = (e: React.FormEvent) => {
           nickname: nickname,
           score: finalTime, // ★ clear_time_ms の代わりに score に finalTime を格納
           penalty_count: penaltyCount,
+          quiz_category: selectedQuizCategory
         });
 
       if (error) {
@@ -286,19 +315,21 @@ const handleNicknameSubmit = (e: React.FormEvent) => {
   };
 
   const fetchScoreboard = async () => {
-    setIsScoreboardLoading(true); // ローディング開始
+    setIsScoreboardLoading(true); 
     const { data, error } = await supabase
       .from('quiz_results')
       .select('nickname, created_at, score')
-      .order('score', { ascending: true }) // ★ スコア(タイム)が少ない順
-      .limit(10); // トップ10
+      // ★ 修正点: 現在選択中のカテゴリで絞り込む
+      .eq('quiz_category', selectedQuizCategory) 
+      .order('score', { ascending: true }) 
+      .limit(10); 
 
     if (error) {
       console.error('スコアボードの取得に失敗:', error);
     } else if (data) {
       setScoreboardData(data);
     }
-    setIsScoreboardLoading(false); // ローディング終了
+    setIsScoreboardLoading(false); 
   };
   
   // ミリ秒をフォーマットするヘルパー関数 (変更なし)
@@ -345,44 +376,82 @@ return (
         {showConfetti && <Confetti />}
       </AnimatePresence>
       
-      <div className="relative z-10 w-full h-full flex items-center justify-center p-2 sm:p-4 md:p-6">
-        <div className="w-full max-w-2xl">
-          <AnimatePresence mode="wait">
+  <div className="relative z-10 w-full h-full flex items-center justify-center p-2 sm:p-4 md:p-6">
+  <div className="w-full max-w-2xl">
+    <AnimatePresence mode="wait">
+      {/* --- 画面1: ニックネーム入力 (ルール説明を追加) --- */}
+      {quizState === 'nickname_input' && (
+        <motion.div
+          key="nickname"
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+        >
+          <Card className="relative overflow-hidden bg-white/90 backdrop-blur-sm shadow-2xl border-2 border-purple-200">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500" />
+            
+            {/* ★ 修正: mt-20 と <hr /> を削除 */}
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold text-center text-gray-800 mb-2">
+                {selectedQuizCategory === 'akabane' ? '赤羽クイズ' : '全国地方クイズ'} タイムアタック！
+              </CardTitle>
+              <CardDescription className="text-center text-gray-600">
+                ニックネームを入力して挑戦しよう
+              </CardDescription>
+            </CardHeader>
 
-            {/* --- 画面1: ニックネーム入力 (ルール説明を追加) --- */}
-            {quizState === 'nickname_input' && (
-              <motion.div
-                key="nickname"
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                <Card className="relative overflow-hidden bg-white/90 backdrop-blur-sm shadow-2xl border-2 border-purple-200">
-                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500" />
-                  <CardHeader>
-                    <CardTitle className="text-3xl font-bold text-center text-gray-800 mb-2">
-                      赤羽クイズタイムアタック！
-                    </CardTitle>
-                    <CardDescription className="text-center text-gray-600">
-                      ニックネームを入力して挑戦しよう
-                    </CardDescription>
-                  </CardHeader>
+            {/* ★ 修正: CardContent で囲む */}
+            <CardContent>
+              {/* ★ 1. クイズ選択UI */}
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-center mb-3 text-gray-700">
+                  クイズを選択
+                </h4>
+                <div className="flex gap-4 justify-center">
+                  {/* 赤羽クイズ (変更なし) */}
+                  <label className={`flex-1 p-4 border-2 rounded-lg cursor-pointer text-center transition-all ${selectedQuizCategory === 'akabane' ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-300 hover:bg-gray-50'}`}>
+                    <input
+                      type="radio"
+                      name="quizCategory"
+                      value="akabane" // Supabaseのcategoryカラムの値
+                      checked={selectedQuizCategory === 'akabane'}
+                      onChange={(e) => setSelectedQuizCategory(e.target.value)}
+                      className="sr-only" 
+                    />
+                    <span className="text-lg font-bold">赤羽クイズ</span>
+                  </label>
+                  
+                  {/* ★ 修正: value を 'tihou' に、checked の比較対象も 'tihou' に */}
+                  <label className={`flex-1 p-4 border-2 rounded-lg cursor-pointer text-center transition-all ${selectedQuizCategory === 'tihou' ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-300 hover:bg-gray-50'}`}>
+                    <input
+                      type="radio"
+                      name="quizCategory"
+                      value="tihou" // ★ バグ修正: 'it' から 'tihou' へ
+                      checked={selectedQuizCategory === 'tihou'} // ★ 修正: 'it' から 'tihou' へ
+                      onChange={(e) => setSelectedQuizCategory(e.target.value)}
+                      className="sr-only"
+                    />
+                    <span className="text-lg font-bold">全国地方クイズ</span>
+                  </label>
+                </div>
+              </div>
+              </CardContent>
 
                   {/* ★ 2. ルール説明を追加 */}
                   <CardContent>
                     <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <h4 className="flex items-center justify-center gap-2 text-lg font-semibold text-center mb-3 text-gray-700">
-                        <FaInfoCircle />
-                        ルール説明
-                      </h4>
-                      <ul className="space-y-2 text-gray-600 list-disc list-inside">
-                        <li>問題は<span className="font-bold">全10問</span>です。</li>
-                        <li>すべて<span className="font-bold">「赤羽」</span>に関する問題です。</li>
-                        <li>答えがわからない時はタイムライン等で調べてOK！</li>
-                        <li>誤答は<span className="font-bold text-red-600">+5秒</span>のペナルティです。</li>
-                      </ul>
-                    </div>
+                      <h4 className="flex items-center justify-center gap-2 text-lg font-semibold text-center mb-3 text-gray-700">
+                        <FaInfoCircle />ルール説明
+                      </h4>
+                      <ul className="space-y-2 text-gray-600 list-disc list-inside">
+                        <li>問題は<span className="font-bold">全10問</span>です。</li>
+                        {/* ★ 1. ルール説明を動的に */}
+                        <li>すべて<span className="font-bold">「{selectedQuizCategory === 'akabane' ? '赤羽' : '全国の地方'}」</span>に関する問題です。</li>
+                        <li>答えがわからない時は<span className="font-bold">タイムライン等</span>で調べてOK！</li>
+                        <li>誤答は<span className="font-bold text-red-600">+5秒</span>のペナルティです。</li>
+                      </ul>
+                    </div>
                   
                     <form onSubmit={handleNicknameSubmit} className="space-y-4">
                       <input
@@ -398,6 +467,7 @@ return (
                       >
                         <Button
                           type="submit" 
+                          disabled={nickname.trim() === ''}
                           className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 text-lg shadow-lg"
                         >
                           挑戦する ✨
@@ -595,22 +665,108 @@ return (
                       )}
                     </motion.div>
                     
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 1.2 }}
-                    >
-                      <Button 
-                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-6 text-lg"
-                        onClick={() => setQuizState('nickname_input')} // ニックネーム入力に戻る
+                {/* ★ 3. 解説表示エリア (レイアウト調整版) */}
+                  <AnimatePresence>
+                    {showExplanation && (
+                      <motion.div
+                        key="explanation-area"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        // ★ 修正: 背景を白にし、内側に影を追加して可読性を向上
+                        className="mb-6 p-4 bg-white rounded-lg border border-gray-200 max-h-96 overflow-y-auto shadow-inner"
                       >
-                        もう一度挑戦する
-                      </Button>
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
+                        <h3 className="text-xl font-bold text-center mb-4 text-gray-800">
+                          クイズの解説
+                        </h3>
+                        {/* ★ 修正: 項目間のスペースを調整 */}
+                        <div className="space-y-5">
+                          {quizzes.map((quiz, index) => (
+                            // ★ 修正: 区切り線を少し薄く
+                            <div key={quiz.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                              {/* ★ 修正: 質問文を大きく、太く */}
+                              <p className="text-lg font-bold text-gray-800 mb-3">
+                                Q{index + 1}. {quiz.question}
+                              </p>
+                              
+                              {/* ★ 修正: 選択肢リストのマージンとスペースを調整 */}
+                              <ul className="space-y-1.5 mb-3">
+                                {quiz.options.map((option) => (
+                                  <li 
+                                    key={option} 
+                                    // ★ 修正: gapを調整、正解/不正解のコントラストを強調
+                                    className={`flex items-start gap-2.5 ${
+                                      option === quiz.answer 
+                                        ? 'font-bold text-green-700' // 正解
+                                        : 'text-gray-500' // 不正解
+                                    }`}
+                                  >
+                                    <span className="mt-1 flex-shrink-0">
+                                      {option === quiz.answer ? (
+                                        // ★ 修正: アイコンにも色を明記
+                                        <FaCheckCircle className="text-green-600" />
+                                      ) : (
+                                        // ★ 修正: opacityより直接色指定
+                                        <FaTimesCircle className="text-gray-300" />
+                                      )}
+                                    </span>
+                                    <span>{option}</span>
+                                  </li>
+                                ))}
+                              </ul>
+
+                              {/* ★ 修正: 解説ボックスに角丸を追加 */}
+                              <div className="p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-800 mt-3 rounded-r-md">
+                                {/* ★ 修正:【解説】を太字に */}
+                                <p className="font-bold mb-1">【解説】</p>
+                                {/* ★ 修正: 解説文の行間を広げる */}
+                                <p className="leading-relaxed">{quiz.explanation || '解説はありません。'}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                    
+                    {/* ★ 3. 解説ボタンの追加 */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1.1 }}
+                      className="mb-4"
+                    >
+                      <Button 
+                        className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold py-6 text-lg"
+                        onClick={() => setShowExplanation(!showExplanation)}
+                        variant="outline" 
+                      >
+                       <FaBookOpen className="mr-2" />
+                        {showExplanation ? '解説を閉じる' : '解説を読む'}
+                      </Button>
+                    </motion.div>
+
+                    {/* もう一度挑戦するボタン */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1.2 }}
+                    >
+                      <Button 
+                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-6 text-lg"
+                        onClick={() => {
+                          setShowExplanation(false); // ★ 解説を閉じてから戻る
+                          setQuizState('nickname_input');
+                        }}
+                      >
+                        もう一度挑戦する
+                      </Button>
+                    </motion.div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
             {/* --- 画面2: クイズ中 --- */}
             {quizState === 'in_progress' && (
