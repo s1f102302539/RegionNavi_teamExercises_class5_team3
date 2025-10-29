@@ -206,13 +206,19 @@ export default function QuizEventComponent() {
     } else if (data && data.length > 0) {
       console.log('取得したクイズデータ:', data);
 
-      const shuffledQuizzes = data.map(quiz => ({
-        ...quiz,
-        options: shuffleArray([...quiz.options]) // 元配列を壊さないようコピー
-      }));
+    // 1. まず選択肢をシャッフル
+     const quizzesWithOptionsShuffled = data.map(quiz => ({
+       ...quiz,
+       options: shuffleArray([...quiz.options]) // 元配列を壊さないようコピー
+     }));
+ 
+    // 2. 次にクイズの順番もシャッフル
+     const shuffledQuizzes = shuffleArray(quizzesWithOptionsShuffled);
 
-      setQuizzes(shuffledQuizzes);
-      setQuizState('in_progress');
+     setQuizzes(shuffledQuizzes);
+     // ★ 変更点: ロードが終わったらカウントダウン画面へ
+     setCountdown(3); // カウントダウンをリセット
+     setQuizState('countdown');
       
       // クイズ挑戦ごとにStateをリセット
       setCurrentQuestionIndex(0);
@@ -239,9 +245,7 @@ const handleNicknameSubmit = (e: React.FormEvent) => {
       alert('ニックネームを入力してください');
       return;
     }
-    // fetchQuizzes() を直接呼ばず、カウントダウンを開始する
-    setCountdown(3); // カウントダウンをリセット
-    setQuizState('countdown'); 
+  fetchQuizzes();
   };
 
   // 2. 回答処理 (正解するまで進めないロジック)
@@ -354,7 +358,10 @@ const handleNicknameSubmit = (e: React.FormEvent) => {
         setCountdown((prev) => {
           if (prev <= 1) { // 1 の状態から 0 になる時
             clearInterval(timer);
-            fetchQuizzes(); // カウントダウン終了後にクイズ取得開始
+           // ★ 変更点: クイズ取得は終わっているので、クイズ開始
+           setQuizState('in_progress');
+           // ★ 変更点: この瞬間にタイマースタート
+           setStartTime(Date.now());
             return 0;
           }
           return prev - 1;
