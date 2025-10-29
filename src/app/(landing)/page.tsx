@@ -32,17 +32,23 @@ export default function HomePage() {
       <main className="relative min-h-screen flex flex-col lg:flex-row w-full items-center justify-between px-6 md:px-12 lg:px-24 py-12 overflow-hidden">
         {/* 背景画像とオーバーレイ */}
         <div className="absolute inset-0 -z-10">
-          <Image
-            src="/toppage_background.webp"
-            alt="背景"
-            fill
-            sizes="100vw"
-            priority
-            quality={80}
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-yellow-400/85"></div>
-        </div>
+         {/* ▼▼▼ ここを <video> タグに置き換える ▼▼▼ */}
+               <video
+            autoPlay // 自動再生
+            loop // ループ再生
+            muted // ミュート (自動再生に必須)
+            playsInline // iPhoneで全画面再生になるのを防ぐ
+            className="w-full h-full object-cover" // 画像と同じスタイルを適用
+          >
+            {/* .webm を優先的に読み込み、非対応なら .mp4 を読み込む */}
+            <source src="/top_background.webm" type="video/webm" />
+            お使いのブラウザは動画の再生に対応していません。
+          </video>
+          {/* ▲▲▲ ここまで ▲▲▲ */}
+
+          {/* オーバーレイは動画の上にも残します (テキストの可読性のため) */}
+          <div className="absolute inset-0 bg-yellow-400/85"></div>
+        </div>
 
         {/* 左カラム：キャッチフレーズとボタン */}
         <div

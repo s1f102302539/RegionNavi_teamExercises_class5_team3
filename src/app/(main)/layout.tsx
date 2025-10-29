@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 // サーバーコンポーネントなので metadata をエクスポートできる
 export const metadata: Metadata = {
-  title: "RERENAVI",
+  title: "REReNAVI",
   description: "RERENAVI - 地方の魅力を楽しく知れるプラットフォーム",
 };
 

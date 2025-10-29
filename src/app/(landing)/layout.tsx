@@ -10,7 +10,7 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "RERENAVI - 地方の魅力を楽しく知れるプラットフォーム",
+  title: "REReNAVI",
   description: "RERENAVIへようこそ！",
 };
 

@@ -119,28 +119,6 @@ export default function LoginPage() {
         </div>
       </form>
 
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">または</span>
-        </div>
-      </div>
-
-      <div>
-        <div className="grid grid-cols-1 gap-3"> {/* 1列に変更 */}
-          <button 
-            onClick={() => handleOAuthLogin('google')}
-            className="w-full inline-flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-          >
-            <FaGoogle className="w-5 h-5 mr-2" />
-            Googleでログイン
-          </button>
-          {/* 他のプロバイダーもここに追加できます */}
-        </div>
-      </div>
-
       <p className="text-sm text-center text-gray-600">
         アカウントをお持ちでないですか？{' '}
         <Link href="/signup" className="font-medium text-yellow-600 hover:text-yellow-500">
