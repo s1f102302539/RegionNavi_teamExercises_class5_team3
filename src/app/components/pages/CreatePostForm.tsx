@@ -185,7 +185,7 @@ useEffect(() => {
         />
         <textarea
           name="content"
-          placeholder="埼玉県の魅力について投稿しよう！"
+          placeholder="地方の魅力について投稿しよう！"
           className="w-full p-2 border-none focus:ring-0 rounded-lg bg-gray-100 resize-none"
           rows={3}
         />
