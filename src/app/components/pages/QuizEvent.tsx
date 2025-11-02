@@ -1,16 +1,15 @@
 "use client";
 
-import { createClient } from '@/lib/supabase/client'; // Supabaseクライアント
+import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// アイコンをインポート
-import { 
-  FaCheckCircle, 
-  FaTimesCircle, 
-  FaTrophy, 
-  FaStar, 
-  FaClock,          // タイム用に「時計」アイコンを追加
-  FaExclamationTriangle, // ペナルティ用に「警告」アイコンを追加
+import {
+  FaCheckCircle,
+  FaTimesCircle,
+  FaTrophy,
+  FaStar,
+  FaClock,
+  FaExclamationTriangle,
   FaCrown,
   FaInfoCircle,
   FaBookOpen
@@ -18,19 +17,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Quiz型を定義
 type Quiz = {
-  id: string;
-  question: string;
-  options: string[];
-  answer: string;
-  explanation: string; // ★ 解説カラム
-  category: string; // ★ カテゴリカラム
+  id: string;
+  question: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+  category: string;
 };
 
-// --- アニメーション用コンポーネント (ご提示のコードから流用) ---
-
-// ★ コンフェッティ（紙吹雪）コンポーネント
 const Confetti = () => {
   const confettiPieces = Array.from({ length: 50 }, (_, i) => ({
     id: i,
@@ -54,8 +49,8 @@ const Confetti = () => {
           initial={{ y: 0, rotate: 0, opacity: 1 }}
           animate={{
             y: '110vh',
-            rotate: 360 * 3,
-            opacity: 0,
+            rotate: 1080,
+            opacity: 0
           }}
           transition={{
             duration: piece.duration,
@@ -68,10 +63,9 @@ const Confetti = () => {
   );
 };
 
-// ★ パーティクル背景
 const ParticleBackground = ({ isCorrect }: { isCorrect: boolean }) => {
   const particles = Array.from({ length: 20 }, (_, i) => i);
-  
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {particles.map((i) => (
@@ -81,16 +75,16 @@ const ParticleBackground = ({ isCorrect }: { isCorrect: boolean }) => {
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            backgroundColor: isCorrect ? '#4ECDC4' : '#FF6B6B',
+            backgroundColor: isCorrect ? '#4ECDC4' : '#FF6B6B'
           }}
           animate={{
             scale: [1, 2, 1],
-            opacity: [0.3, 0.8, 0.3],
+            opacity: [0.3, 0.8, 0.3]
           }}
           transition={{
             duration: 2,
             repeat: Infinity,
-            delay: i * 0.1,
+            delay: i * 0.1
           }}
         />
       ))}
@@ -98,24 +92,22 @@ const ParticleBackground = ({ isCorrect }: { isCorrect: boolean }) => {
   );
 };
 
-// カード全体のアニメーション
 const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.98 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1, 
-    transition: { 
-      duration: 0.5, 
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.5,
       ease: 'easeOut',
-      when: "beforeChildren",
+      when: 'beforeChildren',
       staggerChildren: 0.1
-    } 
+    }
   },
-  exit: { opacity: 0, y: -30, scale: 0.98, transition: { duration: 0.3 } },
+  exit: { opacity: 0, y: -30, scale: 0.98, transition: { duration: 0.3 } }
 };
 
-// 選択肢のアニメーション
 const optionVariants = {
   hidden: { opacity: 0, x: -30, scale: 0.95 },
   visible: (i: number) => ({
@@ -128,65 +120,75 @@ const optionVariants = {
       stiffness: 100
     }
   }),
-  shake: { // 不正解時のシェイク
+  shake: {
     x: [-8, 8, -8, 8, 0],
     transition: { duration: 0.4 }
   }
 };
 
-// ★★★ ここからロジックを統合 ★★★
-
 const shuffleArray = (array: any[]) => {
-  let currentIndex = array.length, randomIndex;
-  // While there remain elements to shuffle.
-  while (currentIndex !== 0) {
-    // Pick a remaining element.
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-    // And swap it with the current element.
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex], array[currentIndex]];
-  }
-  return array;
+  let currentIndex = array.length,
+    randomIndex;
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+  }
+  return array;
 };
 
 type ScoreboardEntry = {
-  nickname: string;
-  created_at: string;
-  score: number;
+  nickname: string;
+  created_at: string;
+  score: number;
 };
 
 export default function QuizEventComponent() {
-  
-  // --- State定義 (ロジックとUIの両方を管理) ---
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [nickname, setNickname] = useState('');
-  // 3画面の状態を管理
   const [quizState, setQuizState] = useState<'nickname_input' | 'countdown' | 'loading' | 'in_progress' | 'finished'>('nickname_input');
-
   const [countdown, setCountdown] = useState(3);
-
-  // タイム計測用
   const [startTime, setStartTime] = useState<number | null>(null);
   const [penaltyCount, setPenaltyCount] = useState(0);
   const [finalClearTimeMs, setFinalClearTimeMs] = useState<number | null>(null);
-
-  // クイズ中のUI制御用
   const [disabledOptions, setDisabledOptions] = useState<string[]>([]);
-  const [feedback, setFeedback] = useState(''); // '違います！...'
-  const [shakeOption, setShakeOption] = useState<string | null>(null); // 不正解シェイク用
-  
-  // クイズ終了時のエフェクト用
+  const [feedback, setFeedback] = useState('');
+  const [shakeOption, setShakeOption] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-
   const [scoreboardData, setScoreboardData] = useState<ScoreboardEntry[]>([]);
   const [isScoreboardLoading, setIsScoreboardLoading] = useState(true);
-
   const [selectedQuizCategory, setSelectedQuizCategory] = useState<string>('akabane');
   const [showExplanation, setShowExplanation] = useState(false);
 
   const supabase = createClient();
+
+  const getCategoryDisplayName = (category: string) => {
+    switch (category) {
+      case 'akabane':
+        return '赤羽';
+      case 'tihou':
+        return '全国の地方';
+      case 'kids':
+        return 'キッズ';
+      default:
+        return 'クイズ';
+    }
+  };
+
+  const getCategoryTitle = (category: string) => {
+    switch (category) {
+      case 'akabane':
+        return '赤羽クイズ';
+      case 'tihou':
+        return '全国地方クイズ';
+      case 'kids':
+        return 'キッズクイズ';
+      default:
+        return 'クイズ';
+    }
+  };
+
 
   // --- 関数定義 (クイズロジック) ---
 
@@ -441,6 +443,26 @@ return (
                     />
                     <span className="text-lg font-bold">全国地方クイズ</span>
                   </label>
+
+                  <label
+                    className={`flex-1 p-4 border-2 rounded-lg cursor-pointer text-center transition-all ${
+                    selectedQuizCategory === 'kids'
+                    ? 'border-purple-500 bg-purple-50 shadow-md'
+                    : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                    >
+                    <input
+                      type="radio"
+                      name="quizCategory"
+                      value="kids"
+                      checked={selectedQuizCategory === 'kids'}
+                      onChange={(e) => setSelectedQuizCategory(e.target.value)}
+                      className="sr-only"
+                      />
+                    <span className="text-lg font-bold">キッズクイズ</span>
+                  </label>
+
+
                 </div>
               </div>
               </CardContent>
@@ -448,17 +470,20 @@ return (
                   {/* ★ 2. ルール説明を追加 */}
                   <CardContent>
                     <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <h4 className="flex items-center justify-center gap-2 text-lg font-semibold text-center mb-3 text-gray-700">
-                        <FaInfoCircle />ルール説明
-                      </h4>
-                      <ul className="space-y-2 text-gray-600 list-disc list-inside">
-                        <li>問題は<span className="font-bold">全10問</span>です。</li>
-                        {/* ★ 1. ルール説明を動的に */}
-                        <li>すべて<span className="font-bold">「{selectedQuizCategory === 'akabane' ? '赤羽' : '全国の地方'}」</span>に関する問題です。</li>
-                        <li>答えがわからない時は<span className="font-bold">タイムライン等</span>で調べてOK！</li>
-                        <li>誤答は<span className="font-bold text-red-600">+5秒</span>のペナルティです。</li>
-                      </ul>
-                    </div>
+                      <h4 className="flex items-center justify-center gap-2 text-lg font-semibold text-center mb-3 text-gray-700">
+                        <FaInfoCircle /> ルール説明
+                      </h4>
+                      <ul className="space-y-2 text-gray-600 list-disc list-inside">
+                        <li>問題は全10問です。</li>
+                        <li>
+                          すべて「{getCategoryDisplayName(selectedQuizCategory)}」に関する問題です。
+                        </li>
+                        <li>答えがわからない時はタイムライン等で調べてOK！</li>
+                        <li>
+                          誤答は<span className="font-bold text-red-600">+15秒</span>のペナルティです。
+                        </li>
+                      </ul>
+                    </div>
                   
                     <form onSubmit={handleNicknameSubmit} className="space-y-4">
                       <input
@@ -612,7 +637,7 @@ return (
                           ペナルティ:
                         </span>
                         <span className="font-medium text-red-500">
-                          +{penaltyCount * 5}.000 秒
+                          +{penaltyCount * 15}.000 秒
                         </span>
                       </p>
                     </motion.div>
