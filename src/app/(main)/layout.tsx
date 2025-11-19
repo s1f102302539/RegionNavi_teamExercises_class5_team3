@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
-import SideNavLeft from "@/app/components/layouts/SideNavLeft";
-import SideNavRight from "@/app/components/layouts/SideNavRight";
+// ★ 修正: サイドバーのインポートを削除
+// import SideNavLeft from "@/app/components/layouts/SideNavLeft";
+// import SideNavRight from "@/app/components/layouts/SideNavRight";
 
 export const dynamic = 'force-dynamic';
 
@@ -16,13 +17,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// サーバーコンポーネントなので metadata をエクスポートできる
 export const metadata: Metadata = {
   title: "REReNAVI",
   description: "RERENAVI - 地方の魅力を楽しく知れるプラットフォーム",
 };
 
-// UI構造は持たず、子要素をそのまま表示するだけのシンプルな作りにします。
 export default function MainLayout({
   children,
 }: {
@@ -30,15 +29,8 @@ export default function MainLayout({
 }) {
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
-      <div className="min-h-screen flex items-stretch">
-        <SideNavLeft />
-        <main className="flex-1">
-          {children}
-        </main>
-        <div className="hidden lg:flex h-screen items-stretch">
-          <SideNavRight />
-        </div>
-      </div>
+      {/* ★ 修正: ここにあったサイドバーやレイアウト構造(div)を削除し、childrenのみを表示 */}
+      {children}
     </div>
   );
 }
