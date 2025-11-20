@@ -1,490 +1,293 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCheckCircle, FaTimesCircle, FaTrophy, FaStar, FaFire } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaTrophy, FaStar, FaBookOpen, FaMapMarkedAlt } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-// Quiz型を定義
+// Quiz型
 type Quiz = {
   id: string;
   question: string;
   options: string[];
   correct_answer: string;
-  prefecture_name?: string;
+  explanation: string;
+  prefecture_id: string;
 };
 
-// ★ ダミーデータ
-const DUMMY_QUIZ: Quiz = {
-  id: 'dummy-001',
-  question: '日本で一番面積が大きい都道府県はどこでしょう？',
-  options: ['北海道', '岩手県', '福島県', '長野県'],
-  correct_answer: '北海道',
-  prefecture_name: '北海道'
+// 漢字名→ID変換 (逆引き用)
+const PREFECTURE_ID_TO_KANJI: { [key: string]: string } = {
+  hokkaido: "北海道", aomori: "青森県", iwate: "岩手県", miyagi: "宮城県", akita: "秋田県", yamagata: "山形県", fukushima: "福島県",
+  ibaraki: "茨城県", tochigi: "栃木県", gunma: "群馬県", saitama: "埼玉県", chiba: "千葉県", tokyo: "東京都", kanagawa: "神奈川県",
+  niigata: "新潟県", toyama: "富山県", ishikawa: "石川県", fukui: "福井県", yamanashi: "山梨県", nagano: "長野県", gifu: "岐阜県", shizuoka: "静岡県", aichi: "愛知県",
+  mie: "三重県", shiga: "滋賀県", kyoto: "京都府", osaka: "大阪府", hyogo: "兵庫県", nara: "奈良県", wakayama: "和歌山県",
+  tottori: "鳥取県", shimane: "島根県", okayama: "岡山県", hiroshima: "広島県", yamaguchi: "山口県",
+  tokushima: "徳島県", kagawa: "香川県", ehime: "愛媛県", kochi: "高知県",
+  fukuoka: "福岡県", saga: "佐賀県", nagasaki: "長崎県", kumamoto: "熊本県", oita: "大分県", miyazaki: "宮崎県", kagoshima: "鹿児島県", okinawa: "沖縄県"
 };
 
-// ★ コンフェッティ（紙吹雪）コンポーネント
-const Confetti = () => {
-  const confettiPieces = Array.from({ length: 50 }, (_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    delay: Math.random() * 0.5,
-    duration: 2 + Math.random() * 2,
-    color: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#A8E6CF', '#FF8B94'][Math.floor(Math.random() * 5)]
-  }));
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {confettiPieces.map((piece) => (
-        <motion.div
-          key={piece.id}
-          className="absolute w-3 h-3 rounded-sm"
-          style={{
-            left: `${piece.left}%`,
-            backgroundColor: piece.color,
-            top: '-10%'
-          }}
-          initial={{ y: 0, rotate: 0, opacity: 1 }}
-          animate={{
-            y: '110vh',
-            rotate: 360 * 3,
-            opacity: 0,
-          }}
-          transition={{
-            duration: piece.duration,
-            delay: piece.delay,
-            ease: 'easeIn'
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-// ★ パーティクル背景
-const ParticleBackground = ({ isCorrect }: { isCorrect: boolean }) => {
-  const particles = Array.from({ length: 20 }, (_, i) => i);
-  
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((i) => (
-        <motion.div
-          key={i}
-          className="absolute w-2 h-2 rounded-full"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            backgroundColor: isCorrect ? '#4ECDC4' : '#FF6B6B',
-          }}
-          animate={{
-            scale: [1, 2, 1],
-            opacity: [0.3, 0.8, 0.3],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            delay: i * 0.1,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-// ★ スコアカウントアップ
-const ScoreCounter = ({ score }: { score: number }) => {
-  const [displayScore, setDisplayScore] = useState(0);
-
-  useEffect(() => {
-    let start = 0;
-    const increment = score / 30;
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= score) {
-        setDisplayScore(score);
-        clearInterval(timer);
-      } else {
-        setDisplayScore(Math.floor(start));
-      }
-    }, 20);
-    return () => clearInterval(timer);
-  }, [score]);
-
-  return (
-    <motion.div
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      className="text-4xl font-bold text-yellow-500"
-    >
-      +{displayScore} pt
-    </motion.div>
-  );
-};
-
+// アニメーション定義
 const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.98 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1, 
-    transition: { 
-      duration: 0.5, 
-      ease: 'easeOut',
-      when: "beforeChildren",
-      staggerChildren: 0.1
-    } 
-  },
-  exit: { opacity: 0, y: -30, scale: 0.98, transition: { duration: 0.3 } },
-};
-
-const optionVariants = {
-  hidden: { opacity: 0, x: -30, scale: 0.95 },
-  visible: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    scale: 1,
-    transition: {
-      delay: i * 0.08,
-      type: 'spring',
-      stiffness: 100
-    }
-  }),
-  shake: {
-    x: [-10, 10, -10, 10, 0],
-    transition: { duration: 0.5 }
-  }
-};
-
-const flashVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: [0, 0.3, 0],
-    transition: { duration: 0.5 }
-  }
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4 } },
+  exit: { opacity: 0, y: -20, scale: 0.95, transition: { duration: 0.2 } }
 };
 
 export default function QuizChallengePage({ side }: { side: 'left' | 'right' }) {
-  const [quiz, setQuiz] = useState<Quiz | null>(null);
-  const [isCleared, setIsCleared] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState('');
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [streak, setStreak] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [score, setScore] = useState(0);
-  const [shakeOption, setShakeOption] = useState<string | null>(null);
+  const supabase = createClient();
+  const params = useSearchParams();
+  
+  const prefKey = params.get(side)?.replace('quiz-', '') || '';
+  const prefName = PREFECTURE_ID_TO_KANJI[prefKey] || prefKey;
   const otherSide = side === 'left' ? 'right' : 'left';
-  const prefKey = quiz?.prefecture_name || '';
+  const otherSideView = params.get(otherSide) || 'home';
+
+  // State
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null); // null:未回答, true:正解, false:不正解
+  const [showExplanation, setShowExplanation] = useState(false);
+  
+  // ゲーム状態: loading, playing, finished
+  const [gameState, setGameState] = useState<'loading' | 'playing' | 'finished'>('loading');
+  const [isAllCorrect, setIsAllCorrect] = useState(false); // 全問正解フラグ
+  const [wrongCount, setWrongCount] = useState(0); // 間違えた回数
 
   useEffect(() => {
-    // ★ ダミーデータを使用（開発用）
-    setQuiz(DUMMY_QUIZ);
-  }, []);
+    const fetchQuizzes = async () => {
+      if (!prefKey) return;
+      setGameState('loading');
 
-  const handleAnswerSubmit = async () => {
-    if (!quiz || isSubmitting) return;
+      const { data, error } = await supabase
+        .from('quizzes')
+        .select('*')
+        .eq('prefecture_id', prefKey)
+        .limit(5); // 5問取得
 
-    setIsSubmitting(true);
-    const isCorrect = selectedAnswer === quiz.correct_answer;
-    
-    if (isCorrect) {
-      setFeedback('correct');
-      setShowConfetti(true);
-      const newStreak = streak + 1;
-      setStreak(newStreak);
-      const earnedScore = 100 * newStreak; // 連続正解でボーナス
-      setScore(earnedScore);
-      
-      setTimeout(() => {
-        setIsCleared(true);
-        setShowConfetti(false);
-      }, 3000);
-    } else {
-      setFeedback('incorrect');
-      setShakeOption(selectedAnswer);
-      setStreak(0);
-      
-      setTimeout(() => {
-        setSelectedAnswer('');
-        setFeedback(null);
-        setIsSubmitting(false);
-        setShakeOption(null);
-      }, 2000);
+      if (!error && data && data.length > 0) {
+        setQuizzes(data);
+        setGameState('playing');
+      } else {
+        console.error("クイズ取得エラー:", error);
+        // クイズがない場合の処理（空配列のまま）
+        setGameState('playing'); 
+      }
+    };
+    fetchQuizzes();
+  }, [prefKey, supabase]);
+
+  // 回答処理
+  const handleAnswer = (option: string) => {
+    if (selectedAnswer) return; // 既に回答済みなら何もしない
+
+    setSelectedAnswer(option);
+    const correct = option === quizzes[currentQuestionIndex].correct_answer;
+    setIsCorrect(correct);
+    setShowExplanation(true);
+
+    if (!correct) {
+      setWrongCount(prev => prev + 1); // 間違いカウント
     }
   };
 
+  // 次の問題へ
+  const handleNext = async () => {
+    if (currentQuestionIndex < quizzes.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setSelectedAnswer(null);
+      setIsCorrect(null);
+      setShowExplanation(false);
+    } else {
+      // 全問終了
+      const passed = wrongCount === 0 && isCorrect === true; // 今回も正解していること
+      setIsAllCorrect(passed);
+      setGameState('finished');
+
+      // クリア処理 (全問正解かつ初回のみ)
+      if (passed) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // クリア履歴を保存 (ON CONFLICT DO NOTHINGで重複防止)
+          await supabase.rpc('unlock_title', { target_title_id: `quiz_${prefKey}` }); // もし称号があれば
+          await supabase.from('prefecture_quiz_clears').insert({
+             user_id: user.id,
+             prefecture_id: prefKey
+          }).select();
+          
+          // ★ レベルアップ処理 (1県クリアで+1レベル)
+          // ここではサーバー側で重複チェックが必要ですが、簡易的に呼び出し
+          // 本来は `increment_level` を呼ぶ前に「この県でレベルアップ済みか」を確認すべき
+          // 今回はシンプルに呼び出します
+          await supabase.rpc('increment_level', { target_user_id: user.id, amount: 1 });
+        }
+      }
+    }
+  };
+
+  if (gameState === 'loading') return <div className="p-8 text-center">読み込み中...</div>;
+
+  if (quizzes.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-bold text-gray-700 mb-4">準備中</h2>
+        <p className="text-gray-500 mb-6">{prefName}のクイズはまだありません。</p>
+        <Button asChild variant="outline">
+          <Link href={`/home?${side}=quiz&${otherSide}=${otherSideView}`}>
+            地図に戻る
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  // --- 結果画面 ---
+  if (gameState === 'finished') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6 bg-gradient-to-b from-white to-yellow-50">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="text-center w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-yellow-200"
+        >
+          {isAllCorrect ? (
+            <>
+              <FaTrophy className="text-6xl text-yellow-500 mx-auto mb-4 drop-shadow-md" />
+              <h2 className="text-3xl font-bold text-yellow-600 mb-2">完全制覇！</h2>
+              <p className="text-gray-600 mb-6">{prefName}の知識マスターに認定！<br/>レベルが上がりました！</p>
+            </>
+          ) : (
+            <>
+              <FaTimesCircle className="text-6xl text-blue-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-700 mb-2">おしい！</h2>
+              <p className="text-gray-600 mb-6">{wrongCount}問ミスがありました。<br/>全問正解でクリアです！</p>
+            </>
+          )}
+
+          <div className="flex gap-4 justify-center">
+            <Button asChild variant="outline">
+               <Link href={`/home?${side}=quiz&${otherSide}=${otherSideView}`}>
+                 地図に戻る
+               </Link>
+            </Button>
+            {!isAllCorrect && (
+              <Button onClick={() => window.location.reload()}>再挑戦</Button>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // --- クイズプレイ画面 ---
+  const currentQuiz = quizzes[currentQuestionIndex];
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="h-full overflow-y-auto p-4 bg-gray-50">
+      <div className="max-w-2xl mx-auto">
+        
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2 text-gray-700 font-bold text-lg">
+            <FaMapMarkedAlt className="text-indigo-500" />
+            {prefName}クイズ
+          </div>
+          <div className="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+            Q{currentQuestionIndex + 1} / {quizzes.length}
+          </div>
+        </div>
 
-      {/* ★ コンフェッティ */}
-      <AnimatePresence>
-        {showConfetti && <Confetti />}
-      </AnimatePresence>
-
-      {/* ★ フラッシュエフェクト */}
-      <AnimatePresence>
-        {feedback === 'correct' && (
+        <AnimatePresence mode="wait">
           <motion.div
-            variants={flashVariants}
+            key={currentQuiz.id}
+            variants={cardVariants}
             initial="hidden"
             animate="visible"
-            exit="hidden"
-            className="fixed inset-0 bg-green-400 pointer-events-none z-40"
-          />
-        )}
-      </AnimatePresence>
+            exit="exit"
+          >
+            <Card className="shadow-lg border-indigo-100">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-6 leading-relaxed">
+                  {currentQuiz.question}
+                </h3>
 
-      <div className="relative z-10 w-full h-full flex items-center justify-center p-2 sm:p-4 md:p-6">
-        <div className="w-full max-w-2xl">
-        <AnimatePresence mode="wait">
-          {isCleared ? (
-            <motion.div
-              key="cleared"
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <Card className="relative overflow-hidden border-4 border-yellow-400 shadow-2xl shadow-yellow-500/50 bg-gradient-to-br from-yellow-50 to-orange-50">
-                {/* ★ パーティクル背景 */}
-                <ParticleBackground isCorrect={true} />
-                
-                <CardHeader className="flex flex-col items-center relative z-10">
-                  <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: 'spring', duration: 0.8, delay: 0.2 }}
-                  >
-                    <FaTrophy className="w-24 h-24 text-yellow-500 drop-shadow-lg" />
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mt-4">
-                      🎉 素晴らしい！ 🎉
-                    </CardTitle>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
-                  >
-                    <CardDescription className="text-lg mt-2">クイズクリア！</CardDescription>
-                  </motion.div>
+                <div className="space-y-3">
+                  {currentQuiz.options.map((option) => {
+                    // 選択状態のスタイル計算
+                    let btnStyle = "w-full justify-start p-4 text-lg h-auto border-2";
+                    if (selectedAnswer === option) {
+                      if (option === currentQuiz.correct_answer) {
+                        btnStyle += " bg-green-100 border-green-500 text-green-800";
+                      } else {
+                        btnStyle += " bg-red-100 border-red-500 text-red-800";
+                      }
+                    } else if (selectedAnswer && option === currentQuiz.correct_answer) {
+                       // 答え合わせ時に正解を表示
+                       btnStyle += " bg-green-50 border-green-300 text-green-700 opacity-70";
+                    } else if (selectedAnswer) {
+                       btnStyle += " opacity-50 cursor-not-allowed";
+                    } else {
+                       btnStyle += " hover:border-indigo-400 hover:bg-indigo-50";
+                    }
 
-                  {/* ★ スコア表示 */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className="mt-4"
-                  >
-                    <ScoreCounter score={score} />
-                  </motion.div>
+                    return (
+                      <Button
+                        key={option}
+                        variant="ghost"
+                        className={btnStyle}
+                        onClick={() => handleAnswer(option)}
+                        disabled={!!selectedAnswer}
+                      >
+                        {option}
+                        {selectedAnswer === option && option === currentQuiz.correct_answer && (
+                          <FaCheckCircle className="ml-auto text-green-600 text-xl" />
+                        )}
+                        {selectedAnswer === option && option !== currentQuiz.correct_answer && (
+                          <FaTimesCircle className="ml-auto text-red-500 text-xl" />
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
 
-                  {/* ★ 連続正解表示 */}
-                  {streak > 1 && (
+                {/* 解説エリア */}
+                <AnimatePresence>
+                  {showExplanation && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1 }}
-                      className="flex items-center gap-2 mt-2 text-orange-600"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="mt-6 pt-4 border-t border-gray-100"
                     >
-                      <FaFire className="text-2xl" />
-                      <span className="text-xl font-bold">{streak}連続正解！</span>
+                      <div className={`flex items-center gap-2 font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-500'}`}>
+                        {isCorrect ? (
+                           <><FaCheckCircle /> 正解！</>
+                        ) : (
+                           <><FaTimesCircle /> 残念...</>
+                        )}
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-900 leading-relaxed">
+                        <span className="font-bold block mb-1"><FaBookOpen className="inline mr-1"/> 解説</span>
+                        {currentQuiz.explanation || "解説はありません。"}
+                      </div>
+                      
+                      <div className="mt-6 text-right">
+                        <Button onClick={handleNext} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8">
+                          {currentQuestionIndex < quizzes.length - 1 ? "次の問題へ" : "結果を見る"}
+                        </Button>
+                      </div>
                     </motion.div>
                   )}
-                </CardHeader>
-                
-                <CardContent className="relative z-10">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2 }}
-                  >
-                    <Button 
-                      className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-6 text-lg"
-                      asChild
-                    >
-                      <Link href={`/home?${side}=quiz-calendar&${otherSide}=home`}>
-                        カレンダーで記録を見る
-                       </Link>
-                    </Button>
-                  </motion.div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : !quiz ? (
-            <motion.div
-              key="no-quiz"
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <Card className="text-center p-8 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle>今日のクイズはありません</CardTitle>
-                  <CardDescription>また明日挑戦してください！</CardDescription>
-                </CardHeader>
-              </Card>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="quiz"
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <Card className="relative overflow-hidden bg-white/90 backdrop-blur-sm shadow-2xl border-2 border-purple-200">
-                {/* ★ ヘッダーグラデーション */}
-                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500" />
-                
-                <CardHeader className="relative">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2"
-                  >
-                    <FaStar className="text-yellow-500 text-2xl" />
-                    <CardTitle className="text-2xl">
-                      {quiz.prefecture_name ? `${quiz.prefecture_name}のデイリークイズ` : 'デイリークイズ'}
-                    </CardTitle>
-                  </motion.div>
-                </CardHeader>
-                
-                <CardContent>
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-xl mb-8 font-medium text-gray-800 leading-relaxed"
-                  >
-                    {quiz.question}
-                  </motion.p>
-                  
-                  <div className="space-y-4 mb-6">
-                    {(quiz.options || []).map((option, i) => {
-                      const isSelected = selectedAnswer === option;
-                      const isCorrectAnswer = option === quiz.correct_answer;
-                      let variant: "default" | "outline" | "secondary" | "destructive" = 'outline';
-                      let icon = null;
-                      let className = 'w-full justify-between p-6 text-lg h-auto transition-all duration-300 font-medium';
+                </AnimatePresence>
 
-                      if (feedback) {
-                        if (isCorrectAnswer) {
-                          variant = 'secondary';
-                          className += ' bg-green-100 border-green-500 text-green-800 hover:bg-green-100';
-                          icon = <FaCheckCircle className="text-green-500 text-2xl" />;
-                        }
-                        if (isSelected && feedback === 'incorrect') {
-                          variant = 'destructive';
-                          icon = <FaTimesCircle className="text-2xl" />;
-                        }
-                      } else if (isSelected) {
-                        variant = 'default';
-                        className += ' bg-gradient-to-r from-purple-500 to-pink-500 text-white scale-105 shadow-lg';
-                      } else {
-                        className += ' hover:scale-102 hover:shadow-md hover:border-purple-300';
-                      }
-
-                      return (
-                        <motion.div
-                          key={option}
-                          custom={i}
-                          variants={optionVariants}
-                          initial="hidden"
-                          animate={shakeOption === option ? "shake" : "visible"}
-                        >
-                          <Button
-                            variant={variant}
-                            className={className}
-                            onClick={() => !isSubmitting && setSelectedAnswer(option)}
-                            disabled={isSubmitting}
-                          >
-                            <span className="text-left flex-1">{option}</span>
-                            <AnimatePresence>
-                              {icon && (
-                                <motion.div
-                                  initial={{ scale: 0, rotate: -180 }}
-                                  animate={{ scale: 1, rotate: 0 }}
-                                  transition={{ type: 'spring' }}
-                                >
-                                  {icon}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </Button>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  {/* ★ フィードバックメッセージ */}
-                  <AnimatePresence>
-                    {feedback === 'incorrect' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="bg-red-50 border-2 border-red-300 rounded-lg p-4 text-center"
-                      >
-                        <p className="text-red-700 font-bold text-lg">
-                          もう一度チャレンジ！💪
-                        </p>
-                        <p className="text-red-600 text-sm mt-1">
-                          ヒントを探してみよう
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-                
-                <CardFooter className="flex justify-between items-center bg-gray-50">
-                  <Button variant="ghost" className="text-purple-600 hover:text-purple-800 hover:bg-purple-50" asChild>
-                    <Link href={`/home?${side}=quiz-${prefKey}&${otherSide}=home`}>
-                      💡 タイムラインでヒントを探す
-                    </Link>
-                  </Button>
-                  
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      onClick={handleAnswerSubmit}
-                      disabled={!selectedAnswer || isSubmitting}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold px-8 py-6 text-lg shadow-lg disabled:opacity-50"
-                    >
-                      {isSubmitting ? (
-                        <span className="flex items-center gap-2">
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                          >
-                            ⏳
-                          </motion.div>
-                          判定中...
-                        </span>
-                      ) : (
-                        '回答する ✨'
-                      )}
-                    </Button>
-                  </motion.div>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          )}
+              </CardContent>
+            </Card>
+          </motion.div>
         </AnimatePresence>
-        </div>
+
       </div>
     </div>
   );
