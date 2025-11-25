@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
-// ★ 修正: サイドバーのインポートを削除
+// ★ 追加: デイリークイズモーダルをインポート
+import DailyQuizModal from "@/app/components/features/quiz/DailyQuizModal";
+
+// サイドバーのインポートは削除されたまま（HomePageController等で制御されているためOK）
 // import SideNavLeft from "@/app/components/layouts/SideNavLeft";
 // import SideNavRight from "@/app/components/layouts/SideNavRight";
 
@@ -29,6 +32,9 @@ export default function MainLayout({
 }) {
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+      {/* ★ ここに追加: これでログイン後の全画面でデイリークイズ判定が動きます */}
+      <DailyQuizModal />
+
       {/* ★ 修正: ここにあったサイドバーやレイアウト構造(div)を削除し、childrenのみを表示 */}
       {children}
     </div>
