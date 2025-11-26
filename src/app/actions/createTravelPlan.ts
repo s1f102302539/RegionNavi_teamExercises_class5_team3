@@ -10,20 +10,34 @@ type Post = {
   content: string;
 };
 
-export async function createTravelPlan(bookmarkedPosts: Post[]): Promise<string> {
+export async function createTravelPlan(
+  bookmarkedPosts: Post[], 
+  duration: string, 
+  budget: string,  // 追加
+  userRequest: string
+): Promise<string> {
+  
   if (!bookmarkedPosts || bookmarkedPosts.length === 0) {
     return 'ブックマークされた投稿がありません。計画を作成できませんでした。';
   }
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
-
     // ✅ プロンプト
     const prompt = `
 あなたは日本の地方創生を応援する、クリエイティブな旅行プランナーです。
-以下のユーザーがブックマークした投稿内容のリストを参考に、魅力的でユニークな1泊2日の旅行計画を提案してください。
+以下のユーザーがブックマークした投稿内容と、ユーザーからの具体的な要望、予算感を参考に、魅力的でユニークな旅行計画を提案してください。
 
-# ユーザーの興味・関心リスト:
+# ユーザーの希望する旅行期間:
+${duration}
+
+# 1人あたりの予算感:
+${budget}
+
+# ユーザーからの具体的な要望:
+${userRequest || '特になし（おまかせ）'}
+
+# ユーザーの興味・関心リスト（ブックマーク）:
 ${bookmarkedPosts.map((post) => `- ${post.content}`).join('\n')}
 `;
 
