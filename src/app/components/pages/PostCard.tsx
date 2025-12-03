@@ -414,12 +414,36 @@ export default function PostCard({ post, currentUser, side }: PostItemProps) {
       </div>
     </div>
 
-    {isModalOpen && displayMediaUrl && (
-      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={() => setIsModalOpen(false)}>
-        <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-          <Image src={displayMediaUrl} alt="投稿画像（拡大）" width={1200} height={1200} className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain" />
+{isModalOpen && displayMediaUrl && (
+      <div 
+        // ★変更点: 
+        // 1. z-[9999]: 他の要素より手前に表示
+        // 2. w-screen h-[100dvh]: 画面幅・高さ(動的高さ)を最大に強制
+        // 3. bg-black/60: 透明度を調整 (60%の黒。薄くしたい場合は/40、濃くしたい場合は/80などに変更)
+        className="fixed inset-0 z-[9999] w-screen h-[100dvh] bg-black/60 flex items-center justify-center p-4" 
+        onClick={() => setIsModalOpen(false)}
+      >
+        <div 
+          className="relative w-full max-w-5xl h-[80vh]" 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Image 
+            src={displayMediaUrl} 
+            alt="投稿画像（拡大）" 
+            fill 
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
+            className="object-contain" 
+            priority
+          />
         </div>
-        <button onClick={() => setIsModalOpen(false)} className="absolute top-5 right-5 text-white text-4xl" aria-label="閉じる">&times;</button>
+        
+        <button 
+          onClick={() => setIsModalOpen(false)} 
+          className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition-colors z-[10000]" 
+          aria-label="閉じる"
+        >
+          &times;
+        </button>
       </div>
     )}
     </>
