@@ -22,7 +22,7 @@ export async function createTravelPlan(
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
     // ✅ プロンプト
     const prompt = `
 あなたは日本の地方創生を応援する、クリエイティブな旅行プランナーです。
