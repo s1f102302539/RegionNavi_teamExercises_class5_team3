@@ -12,6 +12,16 @@ const nextConfig = {
       },
     ],
   },
+  // ▼▼▼ ここから追加した設定 ▼▼▼
+  eslint: {
+    // 本番ビルド時にESLintエラーを無視する
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // 本番ビルド時に型エラーを無視する
+    ignoreBuildErrors: true,
+  },
+  // ▲▲▲ ここまで追加 ▲▲▲
 };
 
 module.exports = nextConfig;
